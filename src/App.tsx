@@ -58,6 +58,7 @@ import AdminCoins from "./pages/AdminCoins";
 
 import Mailbox from "./pages/Mailbox";
 import Lobby from "./pages/Lobby";
+import Settings from "./pages/Settings";
 import AppShell from "./components/AppShell";
 
 const queryClient = new QueryClient();
