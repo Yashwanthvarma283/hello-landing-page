@@ -1201,7 +1201,7 @@ const ProblemWorkspace = () => {
       )}
 
     <header className="flex h-12 md:h-11 items-center gap-1.5 border-b border-panel-border bg-background text-foreground px-2 sm:px-3 overflow-x-auto scrollbar-none z-20 shrink-0">
-      <SidebarTrigger className="h-8 w-8 text-muted-foreground hover:bg-accent hidden md:flex" />
+      <HeaderMenu />
       <div className="h-4 w-px bg-border mx-1 hidden md:block" />
       <span className="text-xs font-bold tracking-tight text-foreground/80 mr-2 hidden lg:inline">JavaArena</span>
       
