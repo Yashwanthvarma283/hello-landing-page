@@ -57,7 +57,9 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<PublicProfile | null>(null);
-  
+  const [cosmeticsMap, setCosmeticsMap] = useState<Record<string, PublicCosmetics>>({});
+  const [streakMap, setStreakMap] = useState<Record<string, number>>({});
+
   // Message Dialog
   const [messageOpen, setMessageOpen] = useState(false);
   const [subject, setSubject] = useState('');
