@@ -39,7 +39,7 @@ import { LEETCODE_TOP150_ROADMAP } from '@/lib/leetcode-top150-data';
 import { getProblemDetail, PROBLEM_DETAILS, type ProblemDetail } from '@/lib/striver-problem-details';
 import { executeJavaCode, stopExecution, type ExecutionStatus as ExecStatusType } from '@/lib/executor';
 import ReactMarkdown from 'react-markdown';
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import { HeaderMenu } from '@/components/AppShell';
 
 
 interface EnhancedDetail extends ProblemDetail {
