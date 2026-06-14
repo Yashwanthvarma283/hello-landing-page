@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useTheme } from '@/lib/theme-context';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { HeaderMenu } from '@/components/AppShell';
 
 interface ToolbarProps {
   onRun: () => void;
