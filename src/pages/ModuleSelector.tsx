@@ -16,7 +16,7 @@ import AppShell from '@/components/AppShell';
 
 interface ModuleCard {
   id: string; title: string; subtitle: string; icon: React.ReactNode; route: string;
-  category: 'roadmap' | 'practice' | 'study' | 'social' | 'tools';
+  category: 'roadmap' | 'practice' | 'study' | 'social' | 'tools' | 'account';
 }
 
 const MODULES: ModuleCard[] = [
