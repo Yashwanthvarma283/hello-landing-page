@@ -116,7 +116,7 @@ const ModuleSelector = () => {
       }).then(undefined, (err: any) => console.error("Streak calculation error:", err));
   }, [authUser]);
 
-  const categories: Array<keyof typeof CATEGORY_INFO> = ['roadmap', 'practice', 'study', 'social', 'tools'];
+  const categories: Array<keyof typeof CATEGORY_INFO> = ['roadmap', 'practice', 'study', 'social', 'tools', 'account'];
   const pct = totalProblems > 0 ? (solvedCount / totalProblems) * 100 : 0;
 
   return (
