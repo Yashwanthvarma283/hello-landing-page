@@ -17,6 +17,8 @@ import {
   searchUsers, PublicProfile, sendDirectMessage, 
   fetchDirectMessages, fetchUserPublicStats 
 } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchStreaksForUsers } from '@/lib/streak';
 import AppShell from '@/components/AppShell';
 import { STRIVER_ROADMAP } from '@/lib/striver-roadmap-data';
 import { NEETCODE_ROADMAP } from '@/lib/neetcode-roadmap-data';
@@ -29,6 +31,16 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
+interface PublicCosmetics {
+  theme?: { name: string; meta?: any };
+  avatar_frame?: { name: string; meta?: any };
+  banner?: { name: string; meta?: any };
+  name_glow?: { name: string; meta?: any };
+  profile_title?: { name: string; meta?: any };
+  leaderboard_glow?: { name: string; meta?: any };
+  [k: string]: any;
+}
 
 interface DetailedStats {
   difficulty: { Easy: number, Medium: number, Hard: number },
