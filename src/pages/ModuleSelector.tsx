@@ -4,7 +4,8 @@ import {
   Map, Code2, BookOpen, Brain, Timer, MessageSquare, Zap, Dices, Plus, Sparkles,
   Layers, GraduationCap, Clock, Building2, Award, Trophy, Share2, Target,
   AlertTriangle, Activity, Calendar, Bookmark, FileSpreadsheet, BarChart3,
-  TrendingUp, RotateCcw, Search, Flame, ArrowRight, Smartphone, ShoppingBag
+  TrendingUp, RotateCcw, Search, Flame, ArrowRight, Smartphone, ShoppingBag,
+  Mail, Settings as SettingsIcon, Shield, Coins, User, Home
 } from 'lucide-react';
 import { useUser } from '@/lib/user-context';
 import { supabase } from '@/integrations/supabase/client';
