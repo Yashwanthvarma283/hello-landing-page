@@ -1498,6 +1498,13 @@ export type Database = {
           name: string
         }[]
       }
+      get_public_cosmetics: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          cosmetics: Json
+          user_id: string
+        }[]
+      }
       get_user_status: { Args: { _user_id: string }; Returns: string }
       has_active_streak_freeze: { Args: { _user_id: string }; Returns: boolean }
       has_role: {

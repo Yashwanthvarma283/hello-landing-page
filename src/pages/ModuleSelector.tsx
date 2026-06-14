@@ -4,7 +4,8 @@ import {
   Map, Code2, BookOpen, Brain, Timer, MessageSquare, Zap, Dices, Plus, Sparkles,
   Layers, GraduationCap, Clock, Building2, Award, Trophy, Share2, Target,
   AlertTriangle, Activity, Calendar, Bookmark, FileSpreadsheet, BarChart3,
-  TrendingUp, RotateCcw, Search, Flame, ArrowRight, Smartphone, ShoppingBag
+  TrendingUp, RotateCcw, Search, Flame, ArrowRight, Smartphone, ShoppingBag,
+  Mail, Settings as SettingsIcon, Shield, Coins, User, Home
 } from 'lucide-react';
 import { useUser } from '@/lib/user-context';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,7 @@ import AppShell from '@/components/AppShell';
 
 interface ModuleCard {
   id: string; title: string; subtitle: string; icon: React.ReactNode; route: string;
-  category: 'roadmap' | 'practice' | 'study' | 'social' | 'tools';
+  category: 'roadmap' | 'practice' | 'study' | 'social' | 'tools' | 'account';
 }
 
 const MODULES: ModuleCard[] = [
@@ -59,6 +60,12 @@ const MODULES: ModuleCard[] = [
   { id: 'dashboard', title: 'Performance Dashboard', subtitle: 'Unified overview', icon: <TrendingUp className="h-4 w-4" />, route: '/dashboard', category: 'tools' },
   { id: 'search', title: 'Problem Search', subtitle: 'Search 750+ problems', icon: <Search className="h-4 w-4" />, route: '/search', category: 'tools' },
   { id: 'submissions', title: 'Submission History', subtitle: 'Past submissions', icon: <Code2 className="h-4 w-4" />, route: '/submissions', category: 'tools' },
+
+  { id: 'home', title: 'IDE Home', subtitle: 'Main code workspace', icon: <Home className="h-4 w-4" />, route: '/', category: 'account' },
+  { id: 'profile', title: 'My Profile', subtitle: 'Stats, badges & equipped items', icon: <User className="h-4 w-4" />, route: '/profile', category: 'account' },
+  { id: 'store', title: 'Store', subtitle: 'Spend coins on themes & boosts', icon: <ShoppingBag className="h-4 w-4" />, route: '/store', category: 'account' },
+  { id: 'mailbox', title: 'Mailbox', subtitle: 'Messages & support tickets', icon: <Mail className="h-4 w-4" />, route: '/mailbox', category: 'account' },
+  { id: 'settings', title: 'Settings', subtitle: 'Account, security, integrations', icon: <SettingsIcon className="h-4 w-4" />, route: '/settings', category: 'account' },
 ];
 
 const CATEGORY_INFO: Record<string, { label: string; description: string }> = {
@@ -67,6 +74,7 @@ const CATEGORY_INFO: Record<string, { label: string; description: string }> = {
   study: { label: 'Study & Learn', description: 'Concepts, patterns, and reference material' },
   social: { label: 'Community', description: 'Share, compete, and track your journey' },
   tools: { label: 'Productivity', description: 'Plan, analyze, and optimize your practice' },
+  account: { label: 'Account', description: 'Your profile, store, and preferences' },
 };
 
 const ModuleSelector = () => {
@@ -108,7 +116,7 @@ const ModuleSelector = () => {
       }).then(undefined, (err: any) => console.error("Streak calculation error:", err));
   }, [authUser]);
 
-  const categories: Array<keyof typeof CATEGORY_INFO> = ['roadmap', 'practice', 'study', 'social', 'tools'];
+  const categories: Array<keyof typeof CATEGORY_INFO> = ['roadmap', 'practice', 'study', 'social', 'tools', 'account'];
   const pct = totalProblems > 0 ? (solvedCount / totalProblems) * 100 : 0;
 
   return (

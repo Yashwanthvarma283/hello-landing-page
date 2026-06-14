@@ -58,6 +58,7 @@ import AdminCoins from "./pages/AdminCoins";
 
 import Mailbox from "./pages/Mailbox";
 import Lobby from "./pages/Lobby";
+import Settings from "./pages/Settings";
 import AppShell from "./components/AppShell";
 
 const queryClient = new QueryClient();
@@ -317,6 +318,7 @@ const App = () => (
               <Route path="/quick-practice" element={bareShell(<QuickPractice />)} />
               <Route path="/leetcode/daily-question" element={bareShell(<DailyQuestion />, true)} />
               <Route path="/mailbox" element={shell(<Mailbox />, "Mailbox", "Your reports, messages and support tickets")} />
+              <Route path="/settings" element={<Settings />}/>
 
               <Route path="/lobby/:code" element={<Lobby />} />
               <Route path="*" element={shell(<NotFound />, "Not Found")} />
