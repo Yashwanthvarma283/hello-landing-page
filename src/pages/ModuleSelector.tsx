@@ -60,6 +60,12 @@ const MODULES: ModuleCard[] = [
   { id: 'dashboard', title: 'Performance Dashboard', subtitle: 'Unified overview', icon: <TrendingUp className="h-4 w-4" />, route: '/dashboard', category: 'tools' },
   { id: 'search', title: 'Problem Search', subtitle: 'Search 750+ problems', icon: <Search className="h-4 w-4" />, route: '/search', category: 'tools' },
   { id: 'submissions', title: 'Submission History', subtitle: 'Past submissions', icon: <Code2 className="h-4 w-4" />, route: '/submissions', category: 'tools' },
+
+  { id: 'home', title: 'IDE Home', subtitle: 'Main code workspace', icon: <Home className="h-4 w-4" />, route: '/', category: 'account' },
+  { id: 'profile', title: 'My Profile', subtitle: 'Stats, badges & equipped items', icon: <User className="h-4 w-4" />, route: '/profile', category: 'account' },
+  { id: 'store', title: 'Store', subtitle: 'Spend coins on themes & boosts', icon: <ShoppingBag className="h-4 w-4" />, route: '/store', category: 'account' },
+  { id: 'mailbox', title: 'Mailbox', subtitle: 'Messages & support tickets', icon: <Mail className="h-4 w-4" />, route: '/mailbox', category: 'account' },
+  { id: 'settings', title: 'Settings', subtitle: 'Account, security, integrations', icon: <SettingsIcon className="h-4 w-4" />, route: '/settings', category: 'account' },
 ];
 
 const CATEGORY_INFO: Record<string, { label: string; description: string }> = {
@@ -68,6 +74,7 @@ const CATEGORY_INFO: Record<string, { label: string; description: string }> = {
   study: { label: 'Study & Learn', description: 'Concepts, patterns, and reference material' },
   social: { label: 'Community', description: 'Share, compete, and track your journey' },
   tools: { label: 'Productivity', description: 'Plan, analyze, and optimize your practice' },
+  account: { label: 'Account', description: 'Your profile, store, and preferences' },
 };
 
 const ModuleSelector = () => {
