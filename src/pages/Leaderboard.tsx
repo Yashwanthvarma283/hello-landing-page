@@ -141,6 +141,17 @@ export default function Leaderboard() {
     try {
       const results = await searchUsers(query);
       setEntries(results);
+      const ids = results.map(r => r.user_id);
+      if (ids.length) {
+        const [{ data: cos }, streaks] = await Promise.all([
+          (supabase as any).rpc('get_public_cosmetics', { _user_ids: ids }),
+          fetchStreaksForUsers(ids),
+        ]);
+        const cm: Record<string, PublicCosmetics> = {};
+        (cos || []).forEach((r: any) => { cm[r.user_id] = r.cosmetics || {}; });
+        setCosmeticsMap(cm);
+        setStreakMap(streaks);
+      }
     } catch (error) {
       console.error(error);
     } finally {
