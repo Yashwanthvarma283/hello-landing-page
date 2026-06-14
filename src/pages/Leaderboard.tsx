@@ -230,30 +230,41 @@ export default function Leaderboard() {
                     <p className="text-sm text-muted-foreground font-medium">No users found</p>
                   </div>
                 ) : (
-                  entries.map((user, idx) => (
+                  entries.map((user, idx) => {
+                    const cos = cosmeticsMap[user.user_id] || {};
+                    const streak = streakMap[user.user_id] || 0;
+                    const hasGlow = !!cos.leaderboard_glow || !!cos.name_glow;
+                    const frameClass = cos.avatar_frame?.meta?.frame_class ? `fx-${cos.avatar_frame.meta.frame_class}` : '';
+                    const bannerStyle = cos.banner?.meta?.gradient ? { background: cos.banner.meta.gradient } : undefined;
+                    const title = cos.profile_title?.name;
+                    return (
                     <button
                       key={user.user_id}
                       onClick={() => setSelectedUser(user)}
-                      className={`w-full text-left p-3 rounded-xl transition-all duration-200 flex items-center gap-4 group ${selectedUser?.user_id === user.user_id ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20' : 'hover:bg-sidebar-accent/50'}`}
+                      className={`w-full text-left p-3 rounded-xl transition-all duration-200 flex items-center gap-4 group relative overflow-hidden ${selectedUser?.user_id === user.user_id ? 'bg-primary/10 shadow-sm ring-1 ring-primary/20' : 'hover:bg-sidebar-accent/50'} ${hasGlow ? 'ring-1 ring-amber-400/40 shadow-[0_0_20px_-4px_hsl(45_100%_60%/.35)]' : ''}`}
+                      style={bannerStyle ? { ...bannerStyle, backgroundBlendMode: 'overlay' } : undefined}
                     >
                       <div className="flex items-center justify-center shrink-0">
                         {getRankBadge(idx)}
                       </div>
                       
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold border border-primary/10 shadow-inner">
+                      <div className={`h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary font-bold border border-primary/10 shadow-inner shrink-0 ${frameClass}`}>
                         {user.username[0].toUpperCase()}
                       </div>
 
                       <div className="flex-1 overflow-hidden">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm truncate">{user.username}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`font-bold text-sm truncate ${cos.name_glow ? 'text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]' : ''}`}>{user.username}</span>
                           {idx === 0 && <Badge className="h-4 px-1 text-[8px] bg-yellow-500/20 text-yellow-500 border-yellow-500/30">TOP</Badge>}
                           {user.user_id === authUser?.id && <Badge className="h-4 px-1 text-[8px] bg-primary/20 text-primary border-primary/30">YOU</Badge>}
+                          {title && <Badge className="h-4 px-1 text-[8px] bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border-amber-500/30">{title}</Badge>}
+                          {cos.theme && <Badge variant="outline" className="h-4 px-1 text-[8px]">{cos.theme.name}</Badge>}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-2">
+                        <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-2 mt-0.5">
                           <span>ID: {user.display_id}</span>
                           <span className="h-1 w-1 rounded-full bg-muted-foreground/30"></span>
-                          <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
+                          <Flame className={`h-2.5 w-2.5 ${streak > 0 ? 'text-orange-500' : ''}`} />
+                          <span className={streak > 0 ? 'text-orange-500 font-semibold' : ''}>{streak}d streak</span>
                         </div>
                       </div>
 
@@ -265,7 +276,8 @@ export default function Leaderboard() {
                       
                       <ChevronRight className={`h-4 w-4 text-muted-foreground/30 transition-transform group-hover:translate-x-0.5 ${selectedUser?.user_id === user.user_id ? 'translate-x-0.5 text-primary/50' : ''}`} />
                     </button>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
