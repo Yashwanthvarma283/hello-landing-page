@@ -1,5 +1,4 @@
 import { useUser } from '@/lib/user-context';
-import { Loader2 } from 'lucide-react';
 import Login from './Login';
 import Dashboard from './Dashboard';
 import GuestDashboard from './GuestDashboard';
@@ -12,14 +11,23 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-foreground text-background flex items-center justify-center shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-5 select-none">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-2xl animate-pulse" />
+          <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shadow-xl">
+            <span className="text-3xl font-black tracking-tight">J</span>
           </div>
-          <span className="text-2xl font-bold tracking-tight text-foreground">JavaArena</span>
         </div>
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <div className="flex items-baseline gap-1">
+          {'JavaArena'.split('').map((c, i) => (
+            <span
+              key={i}
+              className="text-2xl sm:text-3xl font-black tracking-tight text-foreground"
+              style={{ animation: `fadeUp 1.4s ease-in-out ${i * 0.08}s infinite alternate` }}
+            >{c}</span>
+          ))}
+        </div>
+        <style>{`@keyframes fadeUp{0%{opacity:.35;transform:translateY(2px)}100%{opacity:1;transform:translateY(-2px)}}`}</style>
       </div>
     );
   }
