@@ -87,7 +87,12 @@ export function ActiveEffectsProvider({ children }: { children: ReactNode }) {
       const fc = equipped['avatar_frame'].meta?.frame_class;
       if (fc) body.classList.add(`fx-${String(fc)}`);
     }
-    if (equipped['profile_title']) body.classList.add('fx-pro-title');
+    if (equipped['profile_title']) {
+      const label = String(equipped['profile_title'].meta?.label || 'PRO').toLowerCase();
+      body.classList.add(label === 'legend' ? 'fx-title-legend' : 'fx-pro-title');
+    }
+    if (equipped['name_glow']?.meta?.effect === 'rainbow') body.classList.add('fx-name-rainbow');
+    if (equipped['editor_bg']?.meta?.bg === 'matrix') body.classList.add('fx-editor-matrix');
     if (equipped['submission_effect']) body.classList.add('fx-submission-confetti');
     if (equipped['xp_boost']) body.classList.add('fx-xp-boost');
   }, [equipped]);

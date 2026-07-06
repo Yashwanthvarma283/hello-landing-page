@@ -71,7 +71,7 @@ const bareShell = (element: ReactNode, hideMobileNav = false) => <AppShell bare 
 
 const ProblemWorkspaceLoader = () => {
   const { key } = useParams();
-  return bareShell(<ProblemWorkspace key={key} />);
+  return bareShell(<ProblemWorkspace key={key} />, true);
 };
 
 const App = () => (

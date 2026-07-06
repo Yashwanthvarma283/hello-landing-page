@@ -215,7 +215,22 @@ export default function Store() {
                       {consumable && <span className="ml-auto">Qty: {row.quantity}</span>}
                     </div>
                     <div className="flex items-center justify-between mt-auto pt-2 border-t border-border gap-2">
-                      {consumable ? (
+                      {item.slug === 'streak_restore' ? (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="w-full"
+                          disabled={row.quantity < 1}
+                          onClick={async () => {
+                            const y = new Date(); y.setDate(y.getDate() - 1);
+                            const iso = y.toISOString().slice(0, 10);
+                            const { error } = await (supabase as any).rpc('consume_streak_restore', { _gap_date: iso });
+                            if (error) toast.error(error.message); else { toast.success('Streak restored for yesterday'); refresh(); }
+                          }}
+                        >
+                          {row.quantity < 1 ? 'Used' : `Restore yesterday (${row.quantity} left)`}
+                        </Button>
+                      ) : consumable ? (
                         <span className="text-xs text-muted-foreground">Used automatically</span>
                       ) : expired ? (
                         <Button size="sm" variant="default" className="w-full" onClick={() => setConfirm(item)}>

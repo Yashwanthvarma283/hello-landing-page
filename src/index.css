@@ -393,3 +393,41 @@ body.fx-pro-title [data-user-name]::after { content: ' PRO'; display: inline-blo
 body.fx-xp-boost [data-coin-badge]::after { content: '2x'; margin-left: 4px; font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: linear-gradient(135deg, #f59e0b, #ec4899); color: white; font-weight: 700; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Additional themes */
+body.theme-forest {
+  --background: 140 25% 10%; --foreground: 90 30% 92%;
+  --card: 140 22% 14%; --popover: 140 22% 14%;
+  --primary: 130 45% 55%; --primary-foreground: 140 30% 10%;
+  --secondary: 140 18% 20%; --muted: 140 18% 18%; --accent: 90 40% 45%;
+  --border: 140 18% 24%; --sidebar-background: 140 22% 12%;
+}
+body.theme-rose {
+  --background: 340 30% 96%; --foreground: 340 30% 15%;
+  --card: 0 0% 100%; --popover: 0 0% 100%;
+  --primary: 340 70% 55%; --primary-foreground: 0 0% 100%;
+  --secondary: 340 30% 92%; --muted: 340 25% 90%; --accent: 30 60% 70%;
+  --border: 340 25% 85%; --sidebar-background: 340 30% 94%;
+}
+body.theme-cyberpunk {
+  --background: 260 40% 6%; --foreground: 300 100% 92%;
+  --card: 260 40% 10%; --popover: 260 40% 10%;
+  --primary: 320 100% 60%; --primary-foreground: 0 0% 100%;
+  --secondary: 260 40% 16%; --muted: 260 30% 14%; --accent: 180 100% 55%;
+  --border: 320 60% 25%; --sidebar-background: 260 40% 8%;
+}
+
+/* Additional frames */
+body.fx-frame-diamond [data-avatar-frame] { padding: 3px; background: linear-gradient(135deg,#e0f2fe,#a5f3fc,#e0f2fe); border-radius: 9999px; box-shadow: 0 0 14px rgba(56,189,248,.7); }
+body.fx-frame-fire [data-avatar-frame] { padding: 3px; background: conic-gradient(from 0deg,#f97316,#ef4444,#facc15,#f97316); border-radius: 9999px; animation: spin 3s linear infinite; box-shadow: 0 0 14px rgba(249,115,22,.6); }
+
+/* Rainbow username */
+body.fx-name-rainbow [data-user-name] { background: linear-gradient(90deg,#ef4444,#f59e0b,#eab308,#22c55e,#06b6d4,#6366f1,#a855f7); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: rainbow-slide 4s linear infinite; font-weight: 700; }
+@keyframes rainbow-slide { to { background-position: 200% 0; } }
+
+/* LEGEND title */
+body.fx-title-legend [data-user-name]::after { content: ' LEGEND'; display: inline-block; margin-left: 4px; padding: 0 6px; font-size: 0.6em; line-height: 1.6; border-radius: 4px; background: linear-gradient(135deg,#a855f7,#ec4899); color: #fff; font-weight: 800; vertical-align: middle; letter-spacing: .05em; }
+
+/* Matrix editor background */
+body.fx-editor-matrix .monaco-editor .view-lines { background-image: radial-gradient(rgba(34,197,94,.08) 1px, transparent 1px); background-size: 8px 8px; }
+
