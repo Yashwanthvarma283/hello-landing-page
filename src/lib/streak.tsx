@@ -44,15 +44,22 @@ export function computeStreakFromDates(isoDates: string[]): StreakData {
 }
 
 export async function fetchStreakForUser(userId: string): Promise<StreakData> {
-  const { data } = await supabase
-    .from('user_problem_progress')
-    .select('solved, solved_at, last_attempted')
-    .eq('user_id', userId)
-    .eq('solved', true);
+  const [{ data }, { data: restores }] = await Promise.all([
+    supabase
+      .from('user_problem_progress')
+      .select('solved, solved_at, last_attempted')
+      .eq('user_id', userId)
+      .eq('solved', true),
+    (supabase as any)
+      .from('streak_restores')
+      .select('restore_date')
+      .eq('user_id', userId),
+  ]);
   const dates = (data ?? [])
     .map((r: any) => r.solved_at || r.last_attempted)
     .filter(Boolean) as string[];
-  return computeStreakFromDates(dates);
+  const restoreDates = ((restores ?? []) as any[]).map(r => r.restore_date as string);
+  return computeStreakFromDates([...dates, ...restoreDates]);
 }
 
 export function useStreak() {
