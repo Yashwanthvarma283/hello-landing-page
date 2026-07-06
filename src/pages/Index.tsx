@@ -1,3 +1,4 @@
+import { Clock } from 'lucide-react';
 import { useUser } from '@/lib/user-context';
 import Login from './Login';
 import Dashboard from './Dashboard';
@@ -48,7 +49,7 @@ const Index = () => {
         <div className="w-full max-w-sm text-center animate-fade-in">
           <div className="rounded-2xl border border-border bg-card p-8" style={{ boxShadow: 'var(--shadow-lg)' }}>
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/20">
-              <Loader2 className="h-7 w-7 text-warning" />
+              <Clock className="h-7 w-7 text-warning" />
             </div>
             <h2 className="text-lg font-semibold text-foreground mb-2">Account Pending Approval</h2>
             <p className="text-sm text-muted-foreground mb-4">
