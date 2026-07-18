@@ -99,18 +99,18 @@ const Toolbar = ({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <Button onClick={toggleTheme} size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="Toggle theme">
+        <Button onClick={toggleTheme} size="icon" variant="ghost" className="h-8 w-8 rounded-lg hidden sm:inline-flex" title="Toggle theme">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
         <div className="h-4 w-px bg-border mx-0.5 hidden sm:block" />
-        <Button onClick={() => navigate('/profile')} size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="Profile">
+        <Button onClick={() => navigate('/profile')} size="icon" variant="ghost" className="h-8 w-8 rounded-lg hidden sm:inline-flex" title="Profile">
           <User className="h-4 w-4" />
         </Button>
         <span className="text-xs text-muted-foreground font-medium px-1 hidden lg:inline">{username}</span>
-        <Button onClick={onSettings} size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+        <Button onClick={onSettings} size="icon" variant="ghost" className="h-8 w-8 rounded-lg hidden sm:inline-flex">
           <Settings className="h-4 w-4" />
         </Button>
-        <Button onClick={onLogout} size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+        <Button onClick={onLogout} size="icon" variant="ghost" className="h-8 w-8 rounded-lg hidden sm:inline-flex">
           <LogOut className="h-4 w-4" />
         </Button>
         <div className="lg:hidden flex items-center shrink-0 ml-1">

@@ -275,13 +275,13 @@ const CodePlayground = () => {
         <span className="font-bold text-foreground text-sm shrink-0 flex items-center gap-1.5">
           <Zap className="h-4 w-4 text-primary fill-primary/20" />
           <span className="hidden sm:inline">Code Playground</span>
-          <span className="sm:hidden">Playground</span>
+          <span className="sm:hidden">Play</span>
         </span>
-        <Badge variant="outline" className="text-[10px] shrink-0 font-black">JAVA</Badge>
+        <Badge variant="outline" className="text-[10px] shrink-0 font-black hidden sm:inline-flex">JAVA</Badge>
         
-        <div className="flex items-center gap-1 shrink-0 ml-2">
+        <div className="flex items-center gap-1 shrink-0 ml-1 sm:ml-2">
           <Select onValueChange={(v) => setCode(TEMPLATES[v] || code)}>
-            <SelectTrigger className="h-7 w-[100px] sm:w-36 text-[10px] rounded-lg bg-secondary/50 border-transparent"><SelectValue placeholder="Templates" /></SelectTrigger>
+            <SelectTrigger className="h-7 w-[92px] sm:w-36 text-[10px] rounded-lg bg-secondary/50 border-transparent"><SelectValue placeholder="Templates" /></SelectTrigger>
             <SelectContent>
               {Object.keys(TEMPLATES).map(t => <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>)}
             </SelectContent>
@@ -314,7 +314,7 @@ const CodePlayground = () => {
             variant="outline" 
             onClick={handleGitHubPush} 
             disabled={isPushing} 
-            className="h-7 gap-1.5 text-xs text-primary border-primary/20 hover:bg-primary/10 rounded-lg"
+            className="h-7 gap-1.5 text-xs text-primary border-primary/20 hover:bg-primary/10 rounded-lg hidden sm:inline-flex"
           >
             {isPushing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Github className="h-3 w-3" />}
             <span className="hidden md:inline">Sync</span>
