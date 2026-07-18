@@ -131,7 +131,7 @@ function Topbar({ title, subtitle, actions }: { title?: string; subtitle?: strin
       <div className="flex items-center gap-1 shrink-0">
         {actions}
         <StreakChip />
-        <CoinBadge className="hidden sm:inline-flex mr-1" />
+        <CoinBadge className="hidden xs:inline-flex sm:inline-flex mr-1" />
         <ReportIssueDialog pageTitle={title} />
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
