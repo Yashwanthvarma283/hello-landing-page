@@ -88,10 +88,10 @@ export function HeaderMenu() {
 export function StreakChip() {
   const { current, weekActivity } = useStreak();
   return (
-    <div className="hidden sm:flex items-center gap-2 px-2.5 h-9 rounded-md border border-border bg-secondary/40">
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 h-8 sm:h-9 rounded-md border border-border bg-secondary/40">
       <Flame className={`h-3.5 w-3.5 ${current > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
       <span className="text-[12px] font-semibold tabular-nums">{current}</span>
-      <StreakBars data={weekActivity} color="hsl(var(--primary))" height={14} />
+      <span className="hidden xs:inline-flex sm:inline-flex"><StreakBars data={weekActivity} color="hsl(var(--primary))" height={14} /></span>
     </div>
   );
 }
