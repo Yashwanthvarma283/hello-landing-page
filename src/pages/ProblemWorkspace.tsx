@@ -810,6 +810,7 @@ const ProblemWorkspace = () => {
     setIsRunning(true);
     setExecStatus('compiling');
     setBottomTab('console');
+    setMobileTab('results');
     const startTime = Date.now();
 
     try {
@@ -869,6 +870,7 @@ const ProblemWorkspace = () => {
     setIsRunningTests(true);
     setTestResults([]);
     setBottomTab('console');
+    setMobileTab('results');
     const startTime = Date.now();
 
     try {
@@ -918,6 +920,7 @@ const ProblemWorkspace = () => {
     setIsRunningTests(true);
     setTestResults([]);
     setBottomTab('console');
+    setMobileTab('results');
     addConsoleEntry('system', `▶ Submitting code — running ALL test cases...`);
     const startTime = Date.now();
 
@@ -1255,7 +1258,7 @@ const ProblemWorkspace = () => {
         </div>
 
         {/* Mobile-only Run button for quick access */}
-        <div className="md:hidden flex items-center gap-1">
+        <div className="md:hidden hidden items-center gap-1">
           <Button 
             onClick={handleRun} 
             disabled={isRunning || isRunningTests} 
@@ -1358,7 +1361,7 @@ const ProblemWorkspace = () => {
           </DropdownMenuContent>
         </DropdownMenu>
         <ReportIssueDialog pageTitle={roadmapProblem?.title || 'Problem'} />
-        <div className="hidden xs:block">
+        <div className="hidden sm:block">
           <ExecutionStatus status={execStatus} />
         </div>
       </div>
@@ -1473,7 +1476,7 @@ const ProblemWorkspace = () => {
                  <span className="text-[10px] font-mono font-bold text-muted-foreground">JAVA</span>
               </div>
             </div>
-            <div className="flex-1 relative pb-16">
+            <div className="flex-1 relative">
               {APPROACHES.map(approach => (
                 <div 
                   key={approach.key} 
@@ -1513,7 +1516,7 @@ const ProblemWorkspace = () => {
                 </button>
               ))}
             </div>
-            <div className="flex-1 overflow-hidden pb-16">
+            <div className="flex-1 overflow-hidden">
               {bottomTab === 'description' && (
                 <TestCasePanel
                   testCases={detail.testCases.map((tc, i) => ({
@@ -1674,11 +1677,51 @@ const ProblemWorkspace = () => {
           </div>
         )}
 
-        {/* WORKSPACE MOBILE BOTTOM NAV - IDE Mode Selector (Fixed ABOVE global nav) */}
-        <nav 
-          className="fixed left-0 right-0 bg-card border-t border-border z-[100] flex items-center justify-around px-2"
-          style={{ bottom: '56px', height: '56px' }}
-        >
+        <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur px-2 py-2">
+          <div className="grid grid-cols-3 gap-2">
+            <Button 
+              onClick={handleRun} 
+              disabled={isRunning || isRunningTests} 
+              size="sm" 
+              className="h-10 gap-2 rounded-lg font-bold bg-success hover:bg-success/90 text-success-foreground"
+            >
+              {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" fill="currentColor" />}
+              Run
+            </Button>
+            <Button 
+              onClick={handleRunTests} 
+              disabled={isRunning || isRunningTests || detail.testCases.length === 0} 
+              size="sm" 
+              variant="outline"
+              className="h-10 gap-2 rounded-lg font-bold border-primary/20"
+            >
+              {isRunningTests ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+              Test
+            </Button>
+            {(isRunning || isRunningTests) ? (
+              <Button 
+                onClick={() => { stopExecution(); setIsRunning(false); setIsRunningTests(false); setExecStatus('stopped'); }}
+                size="sm" 
+                variant="destructive"
+                className="h-10 gap-2 rounded-lg font-bold"
+              >
+                <Square className="h-4 w-4" /> Stop
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSubmitCode} 
+                disabled={detail.testCases.length === 0} 
+                size="sm" 
+                className="h-10 gap-2 rounded-lg font-bold"
+              >
+                <Code2 className="h-4 w-4" /> Submit
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* WORKSPACE MOBILE BOTTOM NAV - IDE Mode Selector */}
+        <nav className="shrink-0 h-14 bg-card border-t border-border z-[100] flex items-center justify-around px-2">
           <button 
             onClick={() => setMobileTab('problem')} 
             className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all duration-300 ${mobileTab === 'problem' ? 'text-primary' : 'text-muted-foreground'}`}

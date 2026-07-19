@@ -120,9 +120,9 @@ const GuestDashboard = () => {
   }, [consoleHeight]);
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <div className="flex h-[100dvh] flex-col bg-background md:h-screen">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-border bg-card px-2 sm:px-4 py-2 gap-1 overflow-x-auto scrollbar-none">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-2 sm:px-4 py-2 gap-1 overflow-x-auto scrollbar-none">
         <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
           <span className="text-sm font-semibold tracking-tight text-foreground mr-1 hidden sm:inline">JavaArena</span>
           <div className="h-4 w-px bg-border hidden sm:block" />
@@ -133,17 +133,17 @@ const GuestDashboard = () => {
 
           <div className="h-4 w-px bg-border hidden sm:block" />
 
-          <Button onClick={handleRun} disabled={isRunning} size="sm" className="h-8 gap-1 sm:gap-1.5 text-xs font-medium shrink-0 rounded-lg">
+          <Button onClick={handleRun} disabled={isRunning} size="sm" className="hidden h-8 gap-1 sm:inline-flex sm:gap-1.5 text-xs font-medium shrink-0 rounded-lg">
             {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
             Run
           </Button>
           {isRunning && (
-            <Button onClick={() => { stopExecution(); setIsRunning(false); setExecStatus('stopped' as any); }} size="sm" variant="destructive" className="h-8 gap-1 text-xs font-medium shrink-0 rounded-lg">
+            <Button onClick={() => { stopExecution(); setIsRunning(false); setExecStatus('stopped' as any); }} size="sm" variant="destructive" className="hidden h-8 gap-1 text-xs font-medium shrink-0 rounded-lg sm:inline-flex">
               <Square className="h-3.5 w-3.5" /> Stop
             </Button>
           )}
 
-          <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs shrink-0 rounded-lg" disabled>
+          <Button variant="outline" size="sm" className="hidden h-8 gap-1.5 text-xs shrink-0 rounded-lg sm:inline-flex" disabled>
             <CloudOff className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Save (Disabled)</span>
           </Button>
@@ -165,20 +165,20 @@ const GuestDashboard = () => {
       </div>
 
       {/* Guest banner */}
-      <div className="bg-warning/10 border-b border-warning/20 px-4 py-1.5 text-center">
+      <div className="shrink-0 bg-warning/10 border-b border-warning/20 px-3 sm:px-4 py-1.5 text-center">
         <p className="text-[11px] text-warning font-medium">
           ⚡ Guest Mode — Code execution works, but nothing is saved. <button onClick={handleLogin} className="underline hover:text-foreground">Create an account</button> to save your progress.
         </p>
       </div>
 
-      <div className="flex flex-1 overflow-hidden flex-col">
+      <div className="flex min-h-0 flex-1 overflow-hidden flex-col">
         {/* Editor */}
-        <div className={`overflow-hidden ${consoleFullscreen ? 'hidden' : 'flex-1'}`}>
+        <div className={`min-h-0 overflow-hidden ${consoleFullscreen ? 'hidden' : 'flex-1'}`}>
           <CodeEditor code={code} onChange={setCode} />
         </div>
 
         {!consoleFullscreen && (
-          <div className="flex items-center gap-1 sm:gap-2 border-t border-border bg-card px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2 border-t border-border bg-card px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
             <Button onClick={handleRun} disabled={isRunning} size="sm" className="h-8 gap-1.5 px-3 sm:px-4 text-xs font-medium rounded-lg shrink-0">
               {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
               {isRunning ? 'Running...' : 'Run'}
@@ -188,19 +188,21 @@ const GuestDashboard = () => {
                 <Square className="h-3.5 w-3.5" /> Stop
               </Button>
             )}
-            <ExecutionStatus status={execStatus} />
+            <div className="min-w-0 shrink">
+              <ExecutionStatus status={execStatus} />
+            </div>
           </div>
         )}
 
         <div
           onMouseDown={handleDividerMouseDown}
-          className="resize-handle h-1 cursor-row-resize border-t border-border hover:bg-foreground/10 transition-colors"
+          className="resize-handle hidden h-1 cursor-row-resize border-t border-border hover:bg-foreground/10 transition-colors sm:block"
         />
 
         {/* Bottom tabs */}
         <div
           className={`shrink-0 border-t border-border ${consoleFullscreen ? 'flex-1' : ''}`}
-          style={consoleFullscreen ? {} : { height: consoleCollapsed ? 36 : consoleHeight }}
+          style={consoleFullscreen ? {} : { height: consoleCollapsed ? 36 : `min(${consoleHeight}px, 42dvh)` }}
         >
           <div className="flex items-center border-b border-border bg-card px-1 overflow-x-auto scrollbar-none">
             {(['console', 'snippets'] as const).map(tab => (

@@ -101,7 +101,7 @@ function Topbar({ title, subtitle, actions }: { title?: string; subtitle?: strin
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-30 h-14 flex items-center gap-2 px-3 sm:px-4 border-b border-border glass">
+    <header className="sticky top-0 z-30 h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 border-b border-border glass overflow-hidden">
       <HeaderMenu />
       <button onClick={() => navigate('/')} className="hidden md:flex items-center gap-2 group">
         <div className="h-7 w-7 rounded-md bg-foreground text-background flex items-center justify-center shrink-0">
@@ -110,7 +110,7 @@ function Topbar({ title, subtitle, actions }: { title?: string; subtitle?: strin
         <span className="text-[13px] font-semibold tracking-tight">JavaArena</span>
       </button>
       {(title || subtitle) && (
-        <div className="min-w-0 flex-1 ml-2">
+        <div className="min-w-0 flex-1 ml-1 sm:ml-2">
           {title && <div className="text-[13px] font-semibold tracking-tight truncate leading-none">{title}</div>}
           {subtitle && <div className="text-[11px] text-muted-foreground truncate mt-1 leading-none">{subtitle}</div>}
         </div>
@@ -130,10 +130,10 @@ function Topbar({ title, subtitle, actions }: { title?: string; subtitle?: strin
       )}
       <div className="flex items-center gap-1 shrink-0">
         {actions}
-        <StreakChip />
+        <div className="hidden min-[390px]:block"><StreakChip /></div>
         <CoinBadge className="hidden xs:inline-flex sm:inline-flex mr-1" />
-        <ReportIssueDialog pageTitle={title} />
-        <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9" aria-label="Toggle theme">
+        <div className="hidden sm:block"><ReportIssueDialog pageTitle={title} /></div>
+        <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9 hidden sm:inline-flex" aria-label="Toggle theme">
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
       </div>
