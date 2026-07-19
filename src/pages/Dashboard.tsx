@@ -175,6 +175,7 @@ const Dashboard = () => {
     setExecStatus('sending');
     setConsoleCollapsed(false);
     setBottomTab('console');
+    setMobileTab('results');
     setExecTimeMs(null);
 
     try {
@@ -240,6 +241,7 @@ const Dashboard = () => {
     setIsRunningTests(true);
     setTestResults([]);
     setBottomTab('console');
+    setMobileTab('results');
     addConsoleEntry('system', `▶ Running ${testCases.length} test(s)...`);
 
     const { runAllTests } = await import('@/lib/test-runner');
@@ -492,19 +494,9 @@ const Dashboard = () => {
           )}
 
           {mobileTab === 'editor' && (
-            <div className="flex-1 flex flex-col overflow-hidden p-2">
+            <div className="flex-1 flex flex-col overflow-hidden p-2 pb-0">
               <div className={`overflow-hidden rounded-xl border border-border bg-card shadow-sm flex-1`}>
                 <CodeEditor code={code} onChange={setCode} />
-              </div>
-              <div className="flex items-center gap-2 mt-2 bg-card/80 backdrop-blur-sm px-2 py-2 rounded-xl border border-border">
-                <Button onClick={handleRun} disabled={isRunning || isRunningTests} size="sm" className="flex-1 h-10 gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm">
-                  {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" fill="currentColor" />}
-                  Run
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving} size="sm" variant="outline" className="flex-1 h-10 gap-2 font-bold border-primary/20 rounded-lg">
-                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Save
-                </Button>
               </div>
             </div>
           )}
@@ -589,11 +581,31 @@ const Dashboard = () => {
             </div>
           )}
 
+          <div className="shrink-0 border-t border-border bg-card/95 backdrop-blur px-2 py-2">
+            <div className="grid grid-cols-3 gap-2">
+              <Button onClick={handleRun} disabled={isRunning || isRunningTests} size="sm" className="h-10 gap-2 font-bold rounded-lg bg-success hover:bg-success/90 text-success-foreground">
+                {isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" fill="currentColor" />}
+                Run
+              </Button>
+              <Button onClick={handleRunTests} disabled={isRunning || isRunningTests || testCases.length === 0} size="sm" variant="outline" className="h-10 gap-2 font-bold rounded-lg border-primary/20">
+                {isRunningTests ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+                Test
+              </Button>
+              {(isRunning || isRunningTests) ? (
+                <Button onClick={() => { stopExecution(); import('@/lib/test-runner').then(m => m.stopTestExecution()); setIsRunning(false); setIsRunningTests(false); setExecStatus('stopped' as any); }} size="sm" variant="destructive" className="h-10 gap-2 font-bold rounded-lg">
+                  <Square className="h-4 w-4" /> Stop
+                </Button>
+              ) : (
+                <Button onClick={handleSave} disabled={isSaving} size="sm" variant="secondary" className="h-10 gap-2 font-bold rounded-lg">
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Save
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* DASHBOARD MOBILE BOTTOM NAV */}
-          <nav 
-            className="fixed left-0 right-0 bg-card border-t border-border z-[100] flex items-center justify-around px-2"
-            style={{ bottom: '56px', height: '56px' }}
-          >
+          <nav className="shrink-0 h-14 bg-card border-t border-border z-[100] flex items-center justify-around px-2">
             <button 
               onClick={() => setMobileTab('explorer')} 
               className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all duration-300 ${mobileTab === 'explorer' ? 'text-primary' : 'text-muted-foreground'}`}

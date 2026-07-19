@@ -121,29 +121,29 @@ const ModuleSelector = () => {
 
   return (
     <AppShell title="All modules" subtitle={`${MODULES.length} tools across ${categories.length} categories`}>
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-12 animate-in-up">
+      <div className="max-w-6xl mx-auto px-1 sm:px-6 py-3 sm:py-10 space-y-7 sm:space-y-12 animate-in-up">
         {/* Hero */}
-        <section className="grid md:grid-cols-[1.5fr,1fr] gap-8 items-end">
-          <div className="space-y-3">
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-balance">
+        <section className="grid md:grid-cols-[1.5fr,1fr] gap-4 sm:gap-8 items-end">
+          <div className="space-y-2 sm:space-y-3">
+            <h1 className="text-2xl sm:text-5xl font-semibold tracking-tight text-balance">
               Welcome back.
               <span className="block text-muted-foreground">Pick where you left off.</span>
             </h1>
-            <p className="text-[15px] text-muted-foreground max-w-md leading-relaxed">
+            <p className="text-[13px] sm:text-[15px] text-muted-foreground max-w-md leading-relaxed">
               A focused workspace for deliberate practice — roadmaps, drills, study, and analytics in one place.
             </p>
           </div>
 
           {/* Stat ring */}
-          <div className="surface-elevated p-6 rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
+          <div className="surface-elevated p-4 sm:p-6 rounded-xl sm:rounded-2xl">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Overall</div>
-                <div className="text-2xl font-semibold tabular-nums tracking-tight">{solvedCount}<span className="text-muted-foreground text-base font-normal"> / {totalProblems}</span></div>
+                <div className="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight">{solvedCount}<span className="text-muted-foreground text-sm sm:text-base font-normal"> / {totalProblems}</span></div>
               </div>
               <div className="text-right">
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1 justify-end"><Flame className="h-3 w-3" /> Streak</div>
-                <div className="text-2xl font-semibold tabular-nums tracking-tight">{streak}<span className="text-muted-foreground text-base font-normal"> day{streak === 1 ? '' : 's'}</span></div>
+                <div className="text-xl sm:text-2xl font-semibold tabular-nums tracking-tight">{streak}<span className="text-muted-foreground text-sm sm:text-base font-normal"> day{streak === 1 ? '' : 's'}</span></div>
               </div>
             </div>
             <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -157,23 +157,23 @@ const ModuleSelector = () => {
         {categories.map(cat => {
           const items = MODULES.filter(m => m.category === cat);
           return (
-            <section key={cat} className="space-y-4">
-              <header className="flex items-baseline justify-between gap-4">
+            <section key={cat} className="space-y-3 sm:space-y-4">
+              <header className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">{CATEGORY_INFO[cat].label}</h2>
-                  <p className="text-[13px] text-foreground/80 mt-1">{CATEGORY_INFO[cat].description}</p>
+                  <p className="text-[12px] sm:text-[13px] text-foreground/80 mt-1 leading-snug">{CATEGORY_INFO[cat].description}</p>
                 </div>
                 <span className="text-[11px] text-muted-foreground tabular-nums">{items.length}</span>
               </header>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 animate-stagger">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3 animate-stagger">
                 {items.map(mod => (
                   <button
                     key={mod.id}
                     onClick={() => navigate(mod.route)}
-                    className="card-interactive group text-left rounded-xl border border-border bg-card p-4 flex items-center gap-3.5"
+                    className="card-interactive group text-left rounded-lg sm:rounded-xl border border-border bg-card p-3 sm:p-4 min-h-[68px] flex items-center gap-3 sm:gap-3.5"
                   >
-                    <div className="h-9 w-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0 group-hover:bg-foreground group-hover:text-background transition-colors">
+                    <div className="h-10 w-10 sm:h-9 sm:w-9 rounded-lg bg-secondary text-foreground flex items-center justify-center shrink-0 group-hover:bg-foreground group-hover:text-background transition-colors">
                       {mod.icon}
                     </div>
                     <div className="flex-1 min-w-0">
