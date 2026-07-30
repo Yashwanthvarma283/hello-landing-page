@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import GuestDashboard from './GuestDashboard';
 import useNotificationReminders from '@/components/NotificationManager';
 import AppShell from '@/components/AppShell';
+import logoMark from '@/assets/javaarena-logo.png';
 
 const Index = () => {
   const { authUser, loading, isGuest, userStatus } = useUser();
@@ -15,8 +16,8 @@ const Index = () => {
       <div className="flex min-h-screen flex-col items-center justify-center bg-background gap-5 select-none">
         <div className="relative">
           <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-2xl animate-pulse" />
-          <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground flex items-center justify-center shadow-xl">
-            <span className="text-3xl font-black tracking-tight">J</span>
+          <div className="relative h-16 w-16 rounded-2xl bg-foreground text-background flex items-center justify-center shadow-xl">
+            <img src={logoMark} alt="JavaArena logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
           </div>
         </div>
         <div className="flex items-baseline gap-1">

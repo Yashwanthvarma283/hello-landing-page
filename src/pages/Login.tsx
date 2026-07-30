@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { signUp, signIn, supabase } from '@/lib/supabase';
 import { useUser } from '@/lib/user-context';
 import { useNavigate } from 'react-router-dom';
+import logoMark from '@/assets/javaarena-logo.png';
 
 const Login = () => {
   const { enterGuestMode } = useUser();
@@ -67,7 +68,7 @@ const Login = () => {
         {/* Logo */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300">
-            <Code2 className="h-8 w-8 text-background" />
+            <img src={logoMark} alt="JavaArena logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground">JavaArena</h1>
           <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">Your AI-powered DSA practice environment</p>
