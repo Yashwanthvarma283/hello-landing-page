@@ -60,6 +60,7 @@ import Mailbox from "./pages/Mailbox";
 import Lobby from "./pages/Lobby";
 import Settings from "./pages/Settings";
 import AppShell from "./components/AppShell";
+import UpdatePrompt from "./components/UpdatePrompt";
 
 const queryClient = new QueryClient();
 const shell = (element: ReactNode, title?: string, subtitle?: string) => (
@@ -82,6 +83,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <UpdatePrompt />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
