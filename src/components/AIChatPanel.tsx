@@ -224,15 +224,28 @@ const MessageBubble = memo(({ msg, onInsertCode, onRepeat }: MessageBubbleProps 
       >
         {isAssistant ? (
           <div
-            className="prose prose-sm max-w-none dark:prose-invert text-[12.5px] leading-relaxed 
+            className="prose prose-sm max-w-none dark:prose-invert text-[12.5px] leading-[1.65] break-words
+            [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+            [&_p]:my-2 [&_p]:leading-[1.65]
+            [&_ul]:my-2 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-2 [&_ol]:pl-5 [&_ol]:list-decimal
+            [&_li]:my-1 [&_li]:leading-[1.6] [&_li>p]:my-0
+            [&_h1]:text-[14px] [&_h2]:text-[13.5px] [&_h3]:text-[13px]
+            [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:mt-3 [&_h3]:mb-1.5
+            [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold
+            [&_strong]:font-semibold [&_strong]:text-foreground
+            [&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:italic
+            [&_hr]:my-3 [&_hr]:border-panel-border
+            [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2
             [&_pre]:mt-3 [&_pre]:mb-3 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-[#0d1117] [&_pre]:p-4 [&_pre]:border [&_pre]:border-white/10 [&_pre]:shadow-inner [&_pre]:text-gray-100
-            [&_code]:font-mono [&_code]:text-[11.5px] [&_code]:text-gray-100 [&_table]:mt-3 [&_table]:mb-3 [&_table]:border-collapse [&_th]:bg-secondary/20 [&_th]:p-2 [&_td]:p-2 [&_td]:border [&_td]:border-panel-border"
+            [&_pre_code]:font-mono [&_pre_code]:text-[11.5px] [&_pre_code]:text-gray-100 [&_pre_code]:bg-transparent [&_pre_code]:p-0
+            [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_table]:text-[11.5px] [&_th]:bg-secondary/20 [&_th]:p-2 [&_th]:border [&_th]:border-panel-border [&_th]:text-left [&_td]:p-2 [&_td]:border [&_td]:border-panel-border"
           >
             <ReactMarkdown components={markdownComponents}>
               {msg.content}
             </ReactMarkdown>
           </div>
         ) : (
+
           <span>{msg.content}</span>
         )}
       </div>
