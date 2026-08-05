@@ -473,9 +473,11 @@ const AIChatPanel = ({
 
     const currentCode = codeRef.current;
 
-    const finalPrompt = (currentCode || problemDescription)
-      ? `${contextPrefix}USER_REQUEST: ${text}\n\n[CURRENT_CODE_BELOW]\n\`\`\`java\n${currentCode || '// No code provided'}\n\`\`\``
-      : `${contextPrefix}USER_REQUEST: ${text}`;
+    // Free-form chat: send the user's message as-is. The problem/code context is
+    // already delivered to the backend separately, so the model can pick it up when
+    // the user says "explain this code" without us stuffing the code into the prompt.
+    const finalPrompt = isTutorMode ? `[RULES: ${tutorInstructions}]\n\n${text}` : text;
+
 
     try {
       if (text === "__analyze__") {
