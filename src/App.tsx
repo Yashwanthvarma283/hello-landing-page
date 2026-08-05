@@ -61,6 +61,7 @@ import Lobby from "./pages/Lobby";
 import Settings from "./pages/Settings";
 import AppShell from "./components/AppShell";
 import UpdatePrompt from "./components/UpdatePrompt";
+import OfflineIndicator from "./components/OfflineIndicator";
 
 const queryClient = new QueryClient();
 const shell = (element: ReactNode, title?: string, subtitle?: string) => (
@@ -84,6 +85,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <UpdatePrompt />
+          <OfflineIndicator />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
