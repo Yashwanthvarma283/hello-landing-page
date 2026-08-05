@@ -557,18 +557,25 @@ const AIChatPanel = ({
         addMessage("user", "🐛 Find Bugs");
         const prompt =
           `${contextPrefix}\n` +
-          `BUG-FINDING MODE.\n\n` +
+          `BUG-FINDING MODE — report GENUINE bugs only.\n\n` +
           `[JAVA CODE TO REVIEW]\n\`\`\`java\n${currentCode || '// No code provided'}\n\`\`\`\n\n` +
-          `Review the Java code above and report ONLY the bugs / issues you find.\n` +
-          `For each bug, output:\n` +
-          `  • **Location:** line number or method name + the offending snippet (≤ 1 line).\n` +
-          `  • **Type:** compile error / runtime error / logic bug / edge-case miss / performance.\n` +
+          `A genuine bug = the code fails to compile, throws at runtime, produces a wrong answer for some valid input, ` +
+          `misses an edge case that the problem constraints actually allow, or exceeds the required complexity.\n\n` +
+          `DO NOT report: style, naming, formatting, comments, missing javadoc, "could be more readable", ` +
+          `input validation the problem does not require, defensive null checks for inputs the constraints guarantee, ` +
+          `micro-optimizations, or preference-based suggestions. Do not invent hypothetical problems.\n\n` +
+          `Before listing anything, mentally trace the code on the problem's examples. Only list an issue if you can name ` +
+          `a concrete input that breaks it (or an exact compile/runtime failure).\n\n` +
+          `If the code is correct, reply exactly: "### ✅ No genuine bugs found" plus one sentence on why it is correct.\n\n` +
+          `Otherwise, for each real bug output:\n` +
+          `  • **Location:** line number or method + the offending snippet (≤ 1 line).\n` +
+          `  • **Type:** compile error / runtime error / logic bug / edge-case miss / complexity.\n` +
+          `  • **Failing input:** a concrete input that breaks it (or the exact error).\n` +
           `  • **Why it's wrong:** 1–2 sentences.\n` +
-          `  • **How to fix (described in words):** short description.\n\n` +
-          `Strict rules:\n` +
-          `  - If NOT in tutor mode, you MAY provide a 2-3 line code fix for each bug.\n` +
-          `  - If IN tutor mode, do NOT provide any code fixes.`;
+          `  • **Fix:** short description` + (`\n\n`) +
+          `  - If NOT in tutor mode, you MAY add a 2–3 line code fix per bug. In tutor mode, no code.`;
         const result = await aiChat(currentCode, prompt, problemId, history, problemDescription, chatContext);
+
         addMessage("assistant", result);
       } else if (text === "__patterns__") {
         addMessage("user", "📚 Patterns");
