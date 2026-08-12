@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { stageVisualizerCode } from '@/lib/visualizer';
 import { Play, Brain, Loader2, FlaskConical, Square, FolderOpen, MessageSquare, Save, Code2 } from 'lucide-react';
 import { useAutosave } from '@/hooks/use-autosave';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -32,6 +34,7 @@ import { isMainClassStyle } from '@/lib/test-runner';
 import { getGitHubSettings, pushFileToGitHub } from '@/lib/github';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { authUser, profile } = useUser();
   const userId = authUser?.id || '';
   const username = profile?.username || authUser?.email?.split('@')[0] || 'User';
@@ -461,6 +464,7 @@ const Dashboard = () => {
         onLogout={signOut}
         onGitHubPush={handleGitHubPush}
         isPushing={isPushing}
+        onVisualize={() => navigate(stageVisualizerCode({ code, title: activeProblem?.title }))}
         username={username}
         isRunning={isRunning}
         isSaving={isAutoSaving}

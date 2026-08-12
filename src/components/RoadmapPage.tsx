@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown, ChevronRight, CheckCircle2, Circle, Bookmark, BookmarkCheck,
-  Loader2, Target, Sparkles, RotateCcw, ArrowRight, AlertTriangle
+  Loader2, Target, Sparkles, RotateCcw, ArrowRight, AlertTriangle, Eye
 } from 'lucide-react';
+import { stageVisualizerCode, codeForProblem } from '@/lib/visualizer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/user-context';
@@ -88,6 +89,14 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
 
   const handlePractice = (problem: RoadmapProblem) => navigate(`/problem/${problem.key}`);
 
+  const handleVisualize = (problem: RoadmapProblem) => {
+    const route = stageVisualizerCode({
+      code: codeForProblem(problem.key, problem.title, authUser?.id),
+      title: problem.title,
+    });
+    navigate(route);
+  };
+
   const toggleSolved = async (problem: RoadmapProblem) => {
     if (!authUser) return;
     const existing = progress[problem.key];
@@ -139,6 +148,13 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
       <div className="max-w-6xl mx-auto px-6 pt-2 pb-8 grid lg:grid-cols-[280px,1fr] gap-8 animate-in-up">
         {/* Side column */}
         <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-2"
+            onClick={() => navigate(stageVisualizerCode({ code: '', title }))}
+          >
+            <Eye className="h-4 w-4" /> Code Visualizer
+          </Button>
           <ReportIssueDialog trigger={
             <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground hover:text-warning border-dashed">
               <AlertTriangle className="h-4 w-4" /> Report Issue
@@ -281,6 +297,14 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
                                 <Target className="h-2.5 w-2.5" />{p.attempts}
                               </span>
                             ) : null}
+                            <button
+                              onClick={() => handleVisualize(problem)}
+                              aria-label={`Visualize ${problem.title}`}
+                              title="Visualize execution step by step"
+                              className="shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground/70 hover:text-foreground"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
                             <button onClick={() => toggleRevision(problem)} aria-label="Toggle revision" className="shrink-0 opacity-0 group-hover:opacity-100 data-[on=true]:opacity-100 transition-opacity" data-on={isRevision}>
                               {isRevision ? <BookmarkCheck className="h-3.5 w-3.5 text-warning" /> : <Bookmark className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-warning transition-colors" />}
                             </button>

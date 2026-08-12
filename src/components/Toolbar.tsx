@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Play, Save, Zap, Settings, LogOut, Loader2, BookOpen, Moon, Sun, Cloud, User, Github } from 'lucide-react';
+import { Play, Save, Zap, Settings, LogOut, Loader2, BookOpen, Moon, Sun, Cloud, User, Github, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ interface ToolbarProps {
   onSettings: () => void;
   onLogout: () => void;
   onGitHubPush?: () => void;
+  onVisualize?: () => void;
   username: string;
   isRunning: boolean;
   isSaving: boolean;
@@ -27,7 +28,7 @@ interface ToolbarProps {
 }
 
 const Toolbar = ({ 
-  onRun, onSave, onAnalyze, onSettings, onLogout, onGitHubPush, 
+  onRun, onSave, onAnalyze, onSettings, onLogout, onGitHubPush, onVisualize,
   username, isRunning, isSaving, isPushing, runDisabled, aiEnabled, 
   onAIToggle, isAutoSaving, codeIsDirty, leftMobileActions, rightMobileActions 
 }: ToolbarProps) => {
@@ -50,6 +51,13 @@ const Toolbar = ({
           {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           <span className="hidden sm:inline">Save</span>
         </Button>
+
+        {onVisualize && (
+          <Button onClick={onVisualize} size="sm" variant="outline" className="h-8 gap-1 sm:gap-1.5 text-xs font-medium shrink-0 rounded-lg" title="Visualize execution step by step">
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Visualize</span>
+          </Button>
+        )}
 
         {onGitHubPush && (
           <Button 
