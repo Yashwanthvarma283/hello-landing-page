@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Play, Save, Zap, Settings, LogOut, Loader2, BookOpen, Moon, Sun, Cloud, User, Github } from 'lucide-react';
+import { Play, Save, Zap, Settings, LogOut, Loader2, BookOpen, Moon, Sun, Cloud, User, Github, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
