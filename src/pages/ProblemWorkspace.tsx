@@ -10,6 +10,7 @@ import {
   MoreHorizontal, Info
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
+import { stageVisualizerCode } from '@/lib/visualizer';
 import { getGitHubSettings, pushFileToGitHub } from '@/lib/github';
 import { CONTEST_PROBLEMS } from '../lib/contest-problems-data';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
