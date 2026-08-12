@@ -1331,6 +1331,9 @@ const ProblemWorkspace = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(stageVisualizerCode({ code, title: key }))}>
+              <Eye className="h-3.5 w-3.5 mr-2" /> Visualize execution
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleGitHubPush}>
               <Github className="h-3.5 w-3.5 mr-2" /> Push to GitHub
             </DropdownMenuItem>
