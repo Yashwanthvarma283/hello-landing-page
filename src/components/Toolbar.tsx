@@ -13,6 +13,7 @@ interface ToolbarProps {
   onSettings: () => void;
   onLogout: () => void;
   onGitHubPush?: () => void;
+  onVisualize?: () => void;
   username: string;
   isRunning: boolean;
   isSaving: boolean;
@@ -27,7 +28,7 @@ interface ToolbarProps {
 }
 
 const Toolbar = ({ 
-  onRun, onSave, onAnalyze, onSettings, onLogout, onGitHubPush, 
+  onRun, onSave, onAnalyze, onSettings, onLogout, onGitHubPush, onVisualize,
   username, isRunning, isSaving, isPushing, runDisabled, aiEnabled, 
   onAIToggle, isAutoSaving, codeIsDirty, leftMobileActions, rightMobileActions 
 }: ToolbarProps) => {
