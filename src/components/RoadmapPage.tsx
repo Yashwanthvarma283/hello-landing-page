@@ -281,6 +281,14 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
                                 <Target className="h-2.5 w-2.5" />{p.attempts}
                               </span>
                             ) : null}
+                            <button
+                              onClick={() => handleVisualize(problem)}
+                              aria-label={`Visualize ${problem.title}`}
+                              title="Visualize execution step by step"
+                              className="shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground/70 hover:text-foreground"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
                             <button onClick={() => toggleRevision(problem)} aria-label="Toggle revision" className="shrink-0 opacity-0 group-hover:opacity-100 data-[on=true]:opacity-100 transition-opacity" data-on={isRevision}>
                               {isRevision ? <BookmarkCheck className="h-3.5 w-3.5 text-warning" /> : <Bookmark className="h-3.5 w-3.5 text-muted-foreground/70 hover:text-warning transition-colors" />}
                             </button>
