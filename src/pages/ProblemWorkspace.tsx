@@ -1243,6 +1243,15 @@ const ProblemWorkspace = () => {
           <Button variant="ghost" size="sm" onClick={() => setFocusMode(!focusMode)} className={`h-7 w-7 p-0 ${focusMode ? 'text-foreground bg-accent' : 'text-muted-foreground'}`} title="Focus Mode">
             {focusMode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
+          <Button
+            onClick={() => navigate(stageVisualizerCode({ code, title: detail?.title || key }))}
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1.5 text-xs font-medium text-muted-foreground"
+            title="Visualize execution step by step"
+          >
+            <Eye className="h-3 w-3" /> Visualize
+          </Button>
           <Button onClick={handleRun} disabled={isRunning || isRunningTests} size="sm" variant="outline" className="h-7 gap-1.5 text-xs font-medium border-panel-border">
             {isRunning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
             Run
