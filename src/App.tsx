@@ -55,6 +55,7 @@ import QuickPractice from "./pages/QuickPractice";
 import DailyQuestion from "./pages/DailyQuestion";
 import Store from "./pages/Store";
 import AdminCoins from "./pages/AdminCoins";
+import CodeVisualizer from "./pages/CodeVisualizer";
 
 import Mailbox from "./pages/Mailbox";
 import Lobby from "./pages/Lobby";
