@@ -148,6 +148,13 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
       <div className="max-w-6xl mx-auto px-6 pt-2 pb-8 grid lg:grid-cols-[280px,1fr] gap-8 animate-in-up">
         {/* Side column */}
         <aside className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-2"
+            onClick={() => navigate(stageVisualizerCode({ code: '', title }))}
+          >
+            <Eye className="h-4 w-4" /> Code Visualizer
+          </Button>
           <ReportIssueDialog trigger={
             <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground hover:text-warning border-dashed">
               <AlertTriangle className="h-4 w-4" /> Report Issue
