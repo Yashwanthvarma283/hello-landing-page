@@ -52,6 +52,13 @@ const Toolbar = ({
           <span className="hidden sm:inline">Save</span>
         </Button>
 
+        {onVisualize && (
+          <Button onClick={onVisualize} size="sm" variant="outline" className="h-8 gap-1 sm:gap-1.5 text-xs font-medium shrink-0 rounded-lg" title="Visualize execution step by step">
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Visualize</span>
+          </Button>
+        )}
+
         {onGitHubPush && (
           <Button 
             onClick={onGitHubPush} 
