@@ -322,6 +322,7 @@ const App = () => (
               <Route path="/store" element={shell(<Store />, "Store", "Spend coins on themes, boosts, and cosmetics")} />
               <Route path="/quick-practice" element={bareShell(<QuickPractice />)} />
               <Route path="/leetcode/daily-question" element={bareShell(<DailyQuestion />, true)} />
+              <Route path="/visualize" element={<CodeVisualizer />} />
               <Route path="/mailbox" element={shell(<Mailbox />, "Mailbox", "Your reports, messages and support tickets")} />
               <Route path="/settings" element={<Settings />}/>
 
