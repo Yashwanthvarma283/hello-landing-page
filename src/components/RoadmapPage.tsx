@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown, ChevronRight, CheckCircle2, Circle, Bookmark, BookmarkCheck,
-  Loader2, Target, Sparkles, RotateCcw, ArrowRight, AlertTriangle
+  Loader2, Target, Sparkles, RotateCcw, ArrowRight, AlertTriangle, Eye
 } from 'lucide-react';
+import { stageVisualizerCode, codeForProblem } from '@/lib/visualizer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/lib/user-context';
