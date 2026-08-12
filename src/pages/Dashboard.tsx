@@ -34,6 +34,7 @@ import { isMainClassStyle } from '@/lib/test-runner';
 import { getGitHubSettings, pushFileToGitHub } from '@/lib/github';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { authUser, profile } = useUser();
   const userId = authUser?.id || '';
   const username = profile?.username || authUser?.email?.split('@')[0] || 'User';
