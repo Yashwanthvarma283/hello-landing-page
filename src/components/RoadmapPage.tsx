@@ -89,6 +89,14 @@ const RoadmapPage = ({ title, roadmap }: RoadmapPageProps) => {
 
   const handlePractice = (problem: RoadmapProblem) => navigate(`/problem/${problem.key}`);
 
+  const handleVisualize = (problem: RoadmapProblem) => {
+    const route = stageVisualizerCode({
+      code: codeForProblem(problem.key, problem.title, authUser?.id),
+      title: problem.title,
+    });
+    navigate(route);
+  };
+
   const toggleSolved = async (problem: RoadmapProblem) => {
     if (!authUser) return;
     const existing = progress[problem.key];
