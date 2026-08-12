@@ -461,6 +461,7 @@ const Dashboard = () => {
         onLogout={signOut}
         onGitHubPush={handleGitHubPush}
         isPushing={isPushing}
+        onVisualize={() => navigate(stageVisualizerCode({ code, title: activeProblem?.title }))}
         username={username}
         isRunning={isRunning}
         isSaving={isAutoSaving}
