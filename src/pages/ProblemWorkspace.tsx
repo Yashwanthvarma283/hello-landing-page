@@ -1244,7 +1244,7 @@ const ProblemWorkspace = () => {
             {focusMode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
           <Button
-            onClick={() => navigate(stageVisualizerCode({ code, title: detail?.title || key }))}
+            onClick={() => navigate(stageVisualizerCode({ code, title: key }))}
             size="sm"
             variant="ghost"
             className="h-7 gap-1.5 text-xs font-medium text-muted-foreground"
