@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { stageVisualizerCode } from '@/lib/visualizer';
 import { Play, Brain, Loader2, FlaskConical, Square, FolderOpen, MessageSquare, Save, Code2 } from 'lucide-react';
 import { useAutosave } from '@/hooks/use-autosave';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
