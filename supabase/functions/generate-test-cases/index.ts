@@ -60,7 +60,6 @@ Expected output must EXACTLY match what System.out.println() would produce in Ja
 - 2D arrays: "[[1, 2], [3, 4]]" (Arrays.deepToString format)
 - Booleans: "true" or "false"
 - Strings: just the string without extra quotes`
-- Strings: just the string without extra quotes`
           },
           {
             role: "user",

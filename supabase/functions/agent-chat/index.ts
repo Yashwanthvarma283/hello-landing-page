@@ -7,7 +7,9 @@ const corsHeaders = {
 };
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const LOVABLE_MODEL = 'google/gemini-3.7-flash';
 
 function getKeys(): string[] {
   const keys: string[] = [];
@@ -20,39 +22,78 @@ function getKeys(): string[] {
 
 let rotationCursor = 0;
 
+async function callLovable(messages: any[], temperature = 0.3): Promise<string> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY not configured');
+
+  const res = await fetch(LOVABLE_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: LOVABLE_MODEL, messages, temperature }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 429) throw new Error('RATE_LIMIT: Too many requests, please wait a moment and try again.');
+    if (res.status === 402) throw new Error('CREDITS: AI credits exhausted. Please top up to keep using the tutor.');
+    throw new Error(`Lovable AI HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? '';
+}
+
 async function callGroq(messages: any[], temperature = 0.3): Promise<{ content: string; keyIndex: number }> {
   const keys = getKeys();
   if (keys.length === 0) throw new Error('No GROQ_API_KEY_* secrets configured');
 
   let lastErr = '';
   const startOffset = rotationCursor++ % keys.length;
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const idx = (startOffset + attempt) % keys.length;
-    const key = keys[idx];
-    try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: MODEL, messages, temperature, max_tokens: 4096 }),
-      });
-      if (res.status === 429 || res.status === 401 || res.status === 403) {
-        lastErr = `Key #${idx + 1} -> HTTP ${res.status}`;
-        continue;
+  for (const model of GROQ_MODELS) {
+    for (let attempt = 0; attempt < keys.length; attempt++) {
+      const idx = (startOffset + attempt) % keys.length;
+      const key = keys[idx];
+      try {
+        const res = await fetch(GROQ_URL, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, messages, temperature, max_tokens: 4096 }),
+        });
+        if (res.status === 429 || res.status === 401 || res.status === 403) {
+          lastErr = `Key #${idx + 1} -> HTTP ${res.status}`;
+          continue;
+        }
+        if (!res.ok) {
+          const text = await res.text();
+          lastErr = `HTTP ${res.status}: ${text.slice(0, 200)}`;
+          continue;
+        }
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content ?? '';
+        return { content, keyIndex: idx + 1 };
+      } catch (e) {
+        lastErr = (e as Error).message;
       }
-      if (!res.ok) {
-        const text = await res.text();
-        lastErr = `HTTP ${res.status}: ${text.slice(0, 200)}`;
-        continue;
-      }
-      const data = await res.json();
-      const content = data?.choices?.[0]?.message?.content ?? '';
-      return { content, keyIndex: idx + 1 };
-    } catch (e) {
-      lastErr = (e as Error).message;
     }
   }
   throw new Error(`All Groq keys failed: ${lastErr}`);
 }
+
+async function callAI(messages: any[], temperature = 0.3): Promise<{ content: string; keyIndex: number; provider: string }> {
+  try {
+    const content = await callLovable(messages, temperature);
+    if (content) return { content, keyIndex: 0, provider: 'lovable' };
+    throw new Error('Empty response from Lovable AI');
+  } catch (primaryErr) {
+    const msg = (primaryErr as Error).message || '';
+    try {
+      const groq = await callGroq(messages, temperature);
+      return { ...groq, provider: 'groq' };
+    } catch (fallbackErr) {
+      throw new Error(`${msg} | Fallback: ${(fallbackErr as Error).message}`);
+    }
+  }
+}
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -144,9 +185,10 @@ serve(async (req) => {
     // 4. Current user message
     messages.push({ role: 'user', content: String(message ?? '') });
 
-    const { content, keyIndex } = await callGroq(messages);
+    const { content, keyIndex, provider } = await callAI(messages);
 
-    return new Response(JSON.stringify({ response: content, keyUsed: keyIndex }), {
+    return new Response(JSON.stringify({ response: content, keyUsed: keyIndex, provider }), {
+
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
