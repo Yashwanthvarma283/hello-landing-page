@@ -185,9 +185,10 @@ serve(async (req) => {
     // 4. Current user message
     messages.push({ role: 'user', content: String(message ?? '') });
 
-    const { content, keyIndex } = await callGroq(messages);
+    const { content, keyIndex, provider } = await callAI(messages);
 
-    return new Response(JSON.stringify({ response: content, keyUsed: keyIndex }), {
+    return new Response(JSON.stringify({ response: content, keyUsed: keyIndex, provider }), {
+
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
