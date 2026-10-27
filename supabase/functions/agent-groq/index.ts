@@ -11,7 +11,7 @@ const corsHeaders = {
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
 const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const LOVABLE_MODEL = 'google/gemini-3.7-flash';
+const LOVABLE_MODEL = 'google/gemini-3.8-flash';
 
 function getKeys(): string[] {
   const keys: string[] = [];
