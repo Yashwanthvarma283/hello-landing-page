@@ -10,6 +10,8 @@ const corsHeaders = {
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
+const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const LOVABLE_MODEL = 'google/gemini-3.8-flash';
 
 function getKeys(): string[] {
   const keys: string[] = [];
@@ -63,6 +65,42 @@ async function callGroq(messages: any[], temperature = 0.2): Promise<{ content: 
     }
   }
   throw new Error(`All Groq keys failed: ${lastErr}`);
+}
+
+async function callLovable(messages: any[], temperature = 0.2): Promise<string> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY not configured');
+
+  const res = await fetch(LOVABLE_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: LOVABLE_MODEL, messages, temperature, max_tokens: 4096 }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 429) throw new Error('RATE_LIMIT: Too many requests, please wait a moment and try again.');
+    if (res.status === 402) throw new Error('CREDITS: AI credits exhausted. Please top up to keep using the AI features.');
+    throw new Error(`Lovable AI HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? '';
+}
+
+async function callAI(messages: any[], temperature = 0.2): Promise<{ content: string; keyIndex: number; provider: string }> {
+  try {
+    const content = await callLovable(messages, temperature);
+    if (content) return { content, keyIndex: 0, provider: 'lovable' };
+    throw new Error('Empty response from Lovable AI');
+  } catch (primaryErr) {
+    const msg = (primaryErr as Error).message || '';
+    try {
+      const groq = await callGroq(messages, temperature);
+      return { ...groq, provider: 'groq' };
+    } catch (fallbackErr) {
+      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
+    }
+  }
 }
 
 function stripCodeFence(text: string): string {
@@ -184,9 +222,9 @@ ${failBlock}Return only the complete corrected Solution class.`;
       });
     }
 
-    const { content, keyIndex } = await callGroq(messages, body.mode === 'fix' ? 0.1 : 0.2);
+    const { content, keyIndex, provider } = await callAI(messages, body.mode === 'fix' ? 0.1 : 0.2);
     const code = stripCodeFence(content);
-    return new Response(JSON.stringify({ code, keyUsed: keyIndex }), {
+    return new Response(JSON.stringify({ code, keyUsed: keyIndex, provider }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
