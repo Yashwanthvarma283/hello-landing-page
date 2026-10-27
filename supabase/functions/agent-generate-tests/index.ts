@@ -11,6 +11,8 @@ const corsHeaders = {
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'llama-3.3-70b-versatile';
+const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+const LOVABLE_MODEL = 'google/gemini-3.7-flash';
 
 function getKeys(): string[] {
   const keys: string[] = [];
@@ -51,6 +53,41 @@ async function callGroq(messages: any[]): Promise<string> {
     } catch (e) { lastErr = (e as Error).message; }
   }
   throw new Error(`Groq failed: ${lastErr}`);
+}
+
+async function callLovable(messages: any[]): Promise<string> {
+  const key = Deno.env.get('LOVABLE_API_KEY');
+  if (!key) throw new Error('LOVABLE_API_KEY not configured');
+
+  const res = await fetch(LOVABLE_URL, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: LOVABLE_MODEL, messages, temperature: 0.2, max_tokens: 4096 }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 429) throw new Error('RATE_LIMIT: Too many requests, please wait a moment and try again.');
+    if (res.status === 402) throw new Error('CREDITS: AI credits exhausted. Please top up to keep using the AI features.');
+    throw new Error(`Lovable AI HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? '';
+}
+
+async function callAI(messages: any[]): Promise<string> {
+  try {
+    const content = await callLovable(messages);
+    if (content) return content;
+    throw new Error('Empty response from Lovable AI');
+  } catch (primaryErr) {
+    const msg = (primaryErr as Error).message || '';
+    try {
+      return await callGroq(messages);
+    } catch (fallbackErr) {
+      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
+    }
+  }
 }
 
 const SYSTEM = `You generate test metadata for a Java DSA coding problem. Output ONLY a single JSON object with this exact shape:
@@ -108,7 +145,7 @@ Deno.serve(async (req) => {
     }
 
     const userMsg = `Title: ${body.title}\nDifficulty: ${body.difficulty || 'Medium'}\nTopic: ${body.topic || 'general'}\n\nGenerate the JSON now.`;
-    const raw = await callGroq([
+    const raw = await callAI([
       { role: 'system', content: SYSTEM },
       { role: 'user', content: userMsg },
     ]);
