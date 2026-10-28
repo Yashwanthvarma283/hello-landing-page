@@ -115,6 +115,7 @@ async function callKey(
       messages: opts.messages,
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 4096,
+      ...(opts.stream ? { stream: true } : {}),
       ...(opts.responseFormat === 'json' ? { response_format: { type: 'json_object' } } : {}),
     }),
   });
