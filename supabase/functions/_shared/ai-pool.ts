@@ -40,9 +40,18 @@ export interface ChatOptions {
   maxTokens?: number;
   model?: string;
   responseFormat?: 'json' | 'text';
+  stream?: boolean;
 }
 
 let rotationCursor = 0;
+
+export interface StreamResult {
+  body: ReadableStream<Uint8Array>;
+  provider: string;
+  keyId: string | null;
+  keyLabel: string;
+  model: string;
+}
 
 // ── config cache (30s per isolate) ───────────────────────────────────────────
 let cache: { keys: PoolKey[]; features: Record<string, { model: string; key_ids: string[]; enabled: boolean }>; at: number } | null = null;
