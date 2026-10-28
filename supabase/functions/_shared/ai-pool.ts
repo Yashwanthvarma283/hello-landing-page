@@ -87,7 +87,8 @@ async function resolveModel(key: PoolKey, feature: { model: string } | undefined
   if (override) return override;
   if (feature?.model) return feature.model;
   if (key.model) return key.model;
-  return key.provider === 'lovable' ? LOVABLE_DEFAULT_MODEL : LOVABLE_DEFAULT_MODEL;
+  if (key.provider === 'lovable') return LOVABLE_DEFAULT_MODEL;
+  throw new Error(`No model selected for key "${key.label}". Pick a model in the admin dashboard (AI APIs).`);
 }
 
 async function callKey(
