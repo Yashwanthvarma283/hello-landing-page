@@ -1577,6 +1577,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      ai_pool_track_key_usage: {
+        Args: { p_key_id: string; p_patch: Json }
+        Returns: undefined
+      }
       award_coins: {
         Args: { _claim_key?: string; _rule_key: string; _user_id: string }
         Returns: number

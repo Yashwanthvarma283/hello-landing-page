@@ -14,7 +14,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1';
-export const LOVABLE_DEFAULT_MODEL = 'google/gemini-3.7-flash';
+export const LOVABLE_DEFAULT_MODEL = 'google/gemini-3.8-flash';
 export const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 export interface PoolKey {
@@ -41,6 +41,8 @@ export interface ChatOptions {
   model?: string;
   responseFormat?: 'json' | 'text';
 }
+
+let rotationCursor = 0;
 
 // ── config cache (30s per isolate) ───────────────────────────────────────────
 let cache: { keys: PoolKey[]; features: Record<string, { model: string; key_ids: string[]; enabled: boolean }>; at: number } | null = null;
@@ -209,8 +211,6 @@ export async function chatWithFeatureAI(featureKey: string, opts: ChatOptions): 
   if (legacy) return legacy;
   return await lovableFallback(opts, opts.model || feature?.model || LOVABLE_DEFAULT_MODEL);
 }
-
-let rotationCursor = 0;
 
 // List models a provider exposes (used by the admin dashboard).
 export async function listProviderModels(baseUrl: string, apiKey: string): Promise<string[]> {
