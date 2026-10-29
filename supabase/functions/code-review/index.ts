@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { chatWithFeatureAI } from "../_shared/ai-pool.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,21 +11,12 @@ serve(async (req) => {
 
   try {
     const { code } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are a code quality reviewer. Analyze the given Java code and return a JSON object with:
+    const { content } = await chatWithFeatureAI("code-review", {
+      messages: [
+        {
+          role: "system",
+          content: `You are a code quality reviewer. Analyze the given Java code and return a JSON object with:
 {
   "overallScore": <1-10>,
   "categories": [
@@ -37,21 +29,12 @@ serve(async (req) => {
   "summary": "Markdown summary of the review"
 }
 Return ONLY valid JSON, no markdown fences.`
-          },
-          { role: "user", content: `Review this Java code:\n\n${code}` }
-        ],
-      }),
+        },
+        { role: "user", content: `Review this Java code:\n\n${code}` }
+      ],
+      responseFormat: 'json',
     });
 
-    if (!response.ok) {
-      const status = response.status;
-      if (status === 429) return new Response(JSON.stringify({ error: "Rate limited" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
-    
     try {
       const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
       const parsed = JSON.parse(cleaned);

@@ -41,6 +41,8 @@ export interface ChatOptions {
   model?: string;
   responseFormat?: 'json' | 'text';
   stream?: boolean;
+  tools?: any[];
+  toolChoice?: any;
 }
 
 let rotationCursor = 0;
@@ -117,6 +119,7 @@ async function callKey(
       max_tokens: opts.maxTokens ?? 4096,
       ...(opts.stream ? { stream: true } : {}),
       ...(opts.responseFormat === 'json' ? { response_format: { type: 'json_object' } } : {}),
+      ...(opts.tools ? { tools: opts.tools, tool_choice: opts.toolChoice ?? 'auto' } : {}),
     }),
   });
 }
