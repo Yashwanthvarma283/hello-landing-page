@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { chatWithFeatureAI } from "../_shared/ai-pool.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,19 +11,11 @@ serve(async (req) => {
 
   try {
     const { code, executionTimeMs, fullExplanation, problemTitle } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // Full explanation mode - returns detailed markdown
     if (fullExplanation) {
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+      try {
+        const { content } = await chatWithFeatureAI("complexity", {
           messages: [
             {
               role: "system",
@@ -40,66 +33,55 @@ Format as clean markdown.`,
               content: `${problemTitle ? `Problem: ${problemTitle}\n\n` : ''}Analyze this Java code in full detail:\n\n\`\`\`java\n${code}\n\`\`\``,
             },
           ],
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        });
+        return new Response(JSON.stringify({ fullExplanation: content || "Could not generate explanation." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (aiErr) {
+        console.error("analyze-complexity AI error:", aiErr);
+        const msg = aiErr instanceof Error ? aiErr.message : "AI error";
+        return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "Could not generate explanation.";
-      return new Response(JSON.stringify({ fullExplanation: content }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
-    // Quick analysis mode - returns structured JSON
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: "Analyze code complexity concisely. Return JSON only." },
-          { role: "user", content: `Analyze this Java code's complexity.${executionTimeMs ? ` Execution took ${executionTimeMs}ms.` : ''}\n\n${code}` },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "return_analysis",
-            description: "Return complexity analysis",
-            parameters: {
-              type: "object",
-              properties: {
-                timeComplexity: { type: "string", description: "Big-O time complexity e.g. O(n log n)" },
-                spaceComplexity: { type: "string", description: "Big-O space complexity e.g. O(n)" },
-                suggestion: { type: "string", description: "Brief optimization suggestion (1-2 sentences)" },
-                optimizationPossible: { type: "boolean", description: "Whether a better approach exists" },
-                betterApproach: { type: "string", description: "Brief description of a better approach if exists" },
-              },
-              required: ["timeComplexity", "spaceComplexity", "suggestion"],
-              additionalProperties: false,
+    // Quick analysis mode - returns structured JSON via tool call
+    const { content, raw } = await chatWithFeatureAI("complexity", {
+      messages: [
+        { role: "system", content: "Analyze code complexity concisely." },
+        { role: "user", content: `Analyze this Java code's complexity.${executionTimeMs ? ` Execution took ${executionTimeMs}ms.` : ''}\n\n${code}` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "return_analysis",
+          description: "Return complexity analysis",
+          parameters: {
+            type: "object",
+            properties: {
+              timeComplexity: { type: "string", description: "Big-O time complexity e.g. O(n log n)" },
+              spaceComplexity: { type: "string", description: "Big-O space complexity e.g. O(n)" },
+              suggestion: { type: "string", description: "Brief optimization suggestion (1-2 sentences)" },
+              optimizationPossible: { type: "boolean", description: "Whether a better approach exists" },
+              betterApproach: { type: "string", description: "Brief description of a better approach if exists" },
             },
+            required: ["timeComplexity", "spaceComplexity", "suggestion"],
+            additionalProperties: false,
           },
-        }],
-        tool_choice: { type: "function", function: { name: "return_analysis" } },
-      }),
+        },
+      }],
+      toolChoice: { type: "function", function: { name: "return_analysis" } },
     });
 
-    if (!response.ok) {
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let parsed: any = null;
+    const toolCall = raw?.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall) {
+      parsed = JSON.parse(toolCall.function.arguments);
+    } else if (content) {
+      try { parsed = JSON.parse(content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()); } catch { parsed = null; }
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall) {
-      return new Response(JSON.stringify(JSON.parse(toolCall.function.arguments)), {
+    if (parsed) {
+      return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

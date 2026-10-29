@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chatWithFeatureAI } from "../_shared/ai-pool.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,8 +12,6 @@ serve(async (req) => {
 
   try {
     const { userId } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -54,51 +53,44 @@ serve(async (req) => {
     const difficulties = ['easy', 'medium', 'hard'];
     const difficulty = difficulties[Math.floor(Math.random() * 2)]; // bias toward easy/medium
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: "Generate a unique Java DSA practice problem. Return structured data." },
-          { role: "user", content: `Generate a ${difficulty} Java DSA problem about "${weakestTopic}". Make it unique and educational.` },
-        ],
-        tools: [{
-          type: "function",
-          function: {
-            name: "return_problem",
-            description: "Return the generated problem",
-            parameters: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-                difficulty: { type: "string" },
-                topic: { type: "string" },
-                examples: { type: "array", items: { type: "object", properties: { input: { type: "string" }, output: { type: "string" } }, required: ["input", "output"] } },
-                starterCode: { type: "string" },
-                hint: { type: "string" },
-              },
-              required: ["title", "description", "difficulty", "topic", "examples", "starterCode"],
-              additionalProperties: false,
+    const result = await chatWithFeatureAI("problem-generation", {
+      messages: [
+        { role: "system", content: "Generate a unique Java DSA practice problem. Return structured data." },
+        { role: "user", content: `Generate a ${difficulty} Java DSA problem about "${weakestTopic}". Make it unique and educational.` },
+      ],
+      tools: [{
+        type: "function",
+        function: {
+          name: "return_problem",
+          description: "Return the generated problem",
+          parameters: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              description: { type: "string" },
+              difficulty: { type: "string" },
+              topic: { type: "string" },
+              examples: { type: "array", items: { type: "object", properties: { input: { type: "string" }, output: { type: "string" } }, required: ["input", "output"] } },
+              starterCode: { type: "string" },
+              hint: { type: "string" },
             },
+            required: ["title", "description", "difficulty", "topic", "examples", "starterCode"],
+            additionalProperties: false,
           },
-        }],
-        tool_choice: { type: "function", function: { name: "return_problem" } },
-      }),
+        },
+      }],
+      toolChoice: { type: "function", function: { name: "return_problem" } },
     });
 
-    if (!response.ok) {
-      return new Response(JSON.stringify({ error: "AI error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let problem: any = null;
+    const toolCall = result.raw?.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall) {
+      problem = JSON.parse(toolCall.function.arguments);
+    } else if (result.content) {
+      try { problem = JSON.parse(result.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()); } catch { problem = null; }
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall) {
-      const problem = JSON.parse(toolCall.function.arguments);
+    if (problem) {
       return new Response(JSON.stringify({ problem, weakestTopic }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
