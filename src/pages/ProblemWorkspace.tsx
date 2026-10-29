@@ -9,7 +9,6 @@ import {
   ExternalLink, Search, AlertCircle, Target, History, Settings, Maximize2, Minimize2,
   MoreHorizontal, Info
 } from 'lucide-react';
-import { API_BASE_URL } from '@/lib/api';
 import { stageVisualizerCode } from '@/lib/visualizer';
 import { getGitHubSettings, pushFileToGitHub } from '@/lib/github';
 import { CONTEST_PROBLEMS } from '../lib/contest-problems-data';
@@ -61,6 +60,91 @@ function setCachedDetail(key: string, detail: EnhancedDetail) {
   try {
     localStorage.setItem(`problem-detail-${key}`, JSON.stringify(detail));
   } catch {}
+}
+
+export function getApproachStarterCode(baseStarterCode: string, approach: 'brute' | 'better' | 'optimal'): string {
+  if (!baseStarterCode) return '';
+  const comment = approach === 'brute'
+    ? '    // 1. Brute Force Approach\n    // Time Complexity: O(...) | Space Complexity: O(...)\n    '
+    : approach === 'better'
+    ? '    // 2. Better Approach\n    // Time Complexity: O(...) | Space Complexity: O(...)\n    '
+    : '    // 3. Optimal Approach\n    // Time Complexity: O(...) | Space Complexity: O(...)\n    ';
+
+  if (baseStarterCode.includes('// 1. Brute Force') || baseStarterCode.includes('// 2. Better') || baseStarterCode.includes('// 3. Optimal')) {
+    return baseStarterCode;
+  }
+
+  const methodOpenBrace = baseStarterCode.indexOf('{', baseStarterCode.indexOf('public '));
+  if (methodOpenBrace !== -1) {
+    const before = baseStarterCode.slice(0, methodOpenBrace + 1);
+    const after = baseStarterCode.slice(methodOpenBrace + 1);
+    return `${before}\n${comment}${after.trimStart()}`;
+  }
+
+  return baseStarterCode;
+}
+
+export function isPlaceholderOrEmpty(code?: string, approachStarter?: string): boolean {
+  if (!code) return true;
+  const t = code.trim();
+  if (t.length === 0) return true;
+  if (t.includes('// 🤖 AI is generating')) return true;
+  if (t.includes('public void solve()') && (t.includes('// Your code here') || t.length < 90)) return true;
+  if (t.includes('public int search') && t.length < 90) return true;
+
+  if (approachStarter) {
+    const stripCommentsAndSpace = (str: string) =>
+      str.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '').replace(/\s+/g, '');
+    if (stripCommentsAndSpace(t) === stripCommentsAndSpace(approachStarter)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function generateProblemDetailViaAI(title: string, difficulty: string, topic: string): Promise<any | null> {
+  const { callPrimaryAI } = await import('@/lib/ai-backend');
+  const prompt = `You are an expert competitive programming problem designer. Create a complete, official LeetCode-style problem in Java:
+Problem Title: "${title}"
+Difficulty: ${difficulty}
+Topic: ${topic || "DSA"}
+
+Generate the problem details adhering to strict LeetCode format:
+1. Detailed description with problem statement, rules, definitions, and code highlights.
+2. 2-3 comprehensive examples with Input, Output, and Explanation.
+3. Realistic constraints (e.g. array length, value ranges).
+4. Valid Java starterCode (class Solution with correct public method signature matching standard LeetCode conventions for this problem).
+5. 3 to 5 acceptance test cases with non-empty string inputs matching parameter names and exact expected output.
+6. Function name, return type, and params array matching the starterCode.
+7. 2-3 progressive hints.
+8. Approach and complexity analysis.
+
+Return ONLY a valid JSON object with:
+{
+  "description": string,
+  "constraints": string[],
+  "examples": [{ "input": string, "output": string, "explanation": string }],
+  "starterCode": string,
+  "testCases": [{ "inputs": Record<string, string>, "expected": string, "category": string }],
+  "functionName": string,
+  "returnType": string,
+  "params": [{ "name": string, "type": string }],
+  "hints": string[],
+  "approach": string
+}`;
+
+  try {
+    const raw = await callPrimaryAI(prompt, "You are a LeetCode problem designer. Return ONLY a valid JSON object.");
+    const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const parsed = JSON.parse(jsonStr);
+    if (parsed && parsed.starterCode && parsed.description) {
+      return parsed;
+    }
+  } catch (err) {
+    console.warn('generateProblemDetailViaAI parsing failed:', err);
+  }
+  return null;
 }
 
 const ProblemWorkspace = () => {
@@ -314,45 +398,63 @@ const ProblemWorkspace = () => {
   const regenerateActiveTab = async () => {
     if (!key) return;
     
-    // 1. Show immediate feedback
-    const loadingPlaceholder = `// 🤖 AI is re-generating the official problem signature for the ${activeApproach} tab...\npublic void solve() {\n    \n}`;
+    // 1. If we already have a valid starter code in detail, restore proper approach function immediately
+    if (detail?.starterCode && !isPlaceholderOrEmpty(detail.starterCode)) {
+      const approachStarter = getApproachStarterCode(detail.starterCode, activeApproach);
+      setCodes(prev => ({ ...prev, [activeApproach]: approachStarter }));
+      toast.success(`🚀 Restored ${activeApproach} signature!`);
+      return;
+    }
+
+    // 2. Otherwise request official LeetCode-style problem detail and starterCode via Supabase
+    const loadingPlaceholder = `// 🤖 AI is generating the official problem signature for the ${activeApproach} tab...\npublic void solve() {\n    \n}`;
     setCodes(prev => ({ ...prev, [activeApproach]: loadingPlaceholder }));
     setGenerationCount(prev => prev + 1);
-    
     setIsGenerating(true);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/generate-problem-detail`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          key, 
-          title: roadmapProblem?.title, 
-          difficulty: roadmapProblem?.difficulty,
-          force: true 
-        }),
-      });
-      
-      if (response.ok) {
-        const generated = await response.json();
-        
-        if (generated.error) {
-          toast.error(`AI Error: ${generated.error}`);
-          // Revert to a basic signature if AI fails, so user isn't stuck with the placeholder
-          const fallback = `class Solution {\n    public void solve() {\n        // Your code here\n    }\n}`;
-          setCodes(prev => ({ ...prev, [activeApproach]: fallback }));
-        } else if (generated.starterCode) {
-          setCodes(prev => ({ ...prev, [activeApproach]: generated.starterCode }));
-          // Also update the global detail so subsequent tab resets use the new one
-          setDetail(prev => ({ ...prev, starterCode: generated.starterCode }));
-          toast.success(`🚀 Signature regenerated for ${activeApproach}!`);
-        } else {
-          toast.error('AI returned an empty signature.');
-          const fallback = `class Solution {\n    public void solve() {\n        // Your code here\n    }\n}`;
-          setCodes(prev => ({ ...prev, [activeApproach]: fallback }));
+      let starterCode = '';
+
+      // Call Supabase generate-problem-detail edge function (routes through Primary AI key)
+      try {
+        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('generate-problem-detail', {
+          body: {
+            problem_key: key,
+            title: roadmapProblem?.title,
+            difficulty: roadmapProblem?.difficulty,
+            topic: (roadmapProblem as any)?.topic || '',
+            force: true,
+          },
+        });
+        if (!edgeErr && edgeData?.detail?.starterCode) {
+          starterCode = edgeData.detail.starterCode;
+          setDetail(prev => ({ ...prev, ...edgeData.detail }));
         }
+      } catch (edgeExc) {
+        console.warn('Edge function generate-problem-detail failed...', edgeExc);
+      }
+
+      // If edge function returned no detail, try client primary AI fallback
+      if (!starterCode && roadmapProblem) {
+        try {
+          const aiData = await generateProblemDetailViaAI(roadmapProblem.title, roadmapProblem.difficulty, (roadmapProblem as any)?.topic || '');
+          if (aiData?.starterCode) {
+            starterCode = aiData.starterCode;
+            setDetail(prev => ({ ...prev, ...aiData }));
+          }
+        } catch (aiErr) {
+          console.warn('Client AI generateProblemDetailViaAI failed...', aiErr);
+        }
+      }
+
+      if (starterCode) {
+        const approachStarter = getApproachStarterCode(starterCode, activeApproach);
+        setCodes(prev => ({ ...prev, [activeApproach]: approachStarter }));
+        toast.success(`🚀 Signature regenerated for ${activeApproach}!`);
       } else {
-        toast.error('AI regeneration failed (Server Error).');
+        const fallback = `class Solution {\n    public void solve() {\n        // Your code here\n    }\n}`;
+        setCodes(prev => ({ ...prev, [activeApproach]: fallback }));
+        toast.info('Using basic function template.');
       }
     } catch (err) {
       console.error(err);
@@ -362,34 +464,36 @@ const ProblemWorkspace = () => {
     }
   };
 
-  // Fetch full problem details from Java Spring Boot Backend
+  // Fetch full problem details with high-quality LeetCode specifications
   const generateFullDetail = useCallback(async (force = false) => {
     if (!roadmapProblem || !key || (hasHardcodedDetail && !force)) return;
     const cached = getCachedDetail(key);
     const isValid = (d: any) => d && Array.isArray(d.testCases) && d.testCases.length >= 1 && d.testCases.every((tc: any) => tc.expected && String(tc.expected).trim() !== '');
 
-    const isPlaceholder = (c: string) => !c || c.trim().length < 50 || c.includes('// 🤖 AI is generating') || c.includes('public void solve()') || c.includes('public int search');
-    
     if (force) {
       setGenerationCount(prev => prev + 1);
-      // We no longer clear the codes here, as the user has a separate refresh button for the function signature.
     }
 
     if (isValid(cached) && !force) {
       setDetail(cached!);
-      if (!codesLoadedFromDb.current && cached!.starterCode) {
-        setCodes(prev => ({
-          brute: isPlaceholder(prev.brute) ? cached!.starterCode : prev.brute,
-          better: isPlaceholder(prev.better) ? cached!.starterCode : prev.better,
-          optimal: isPlaceholder(prev.optimal) ? cached!.starterCode : prev.optimal,
-        }));
+      if (cached!.starterCode) {
+        setCodes(prev => {
+          const bruteStarter = getApproachStarterCode(cached!.starterCode, 'brute');
+          const betterStarter = getApproachStarterCode(cached!.starterCode, 'better');
+          const optimalStarter = getApproachStarterCode(cached!.starterCode, 'optimal');
+          return {
+            brute: isPlaceholderOrEmpty(prev.brute, bruteStarter) ? bruteStarter : prev.brute,
+            better: isPlaceholderOrEmpty(prev.better, betterStarter) ? betterStarter : prev.better,
+            optimal: isPlaceholderOrEmpty(prev.optimal, optimalStarter) ? optimalStarter : prev.optimal,
+          };
+        });
       }
       return;
     }
     setIsGenerating(true);
     setGenerateError('');
     try {
-      // First check shared DB cache (populated by any previous user)
+      // First check shared DB cache (populated by previous runs)
       const { data: cachedRow } = await supabase
         .from('problem_test_cases')
         .select('*')
@@ -398,8 +502,6 @@ const ProblemWorkspace = () => {
 
       if (cachedRow && Array.isArray((cachedRow as any).test_cases) && (cachedRow as any).test_cases.length >= 1) {
         const c: any = cachedRow;
-        
-        // Quality check: ensure test cases actually have expected values
         const tcs = c.test_cases || [];
         const isLowQuality = tcs.some((tc: any) => !tc.expected || String(tc.expected).trim() === '');
         
@@ -415,22 +517,28 @@ const ProblemWorkspace = () => {
             params: c.params || [],
             constraints: c.constraints || [],
             hints: c.hints || [],
+            approach: c.approach,
           };
           setCachedDetail(key, enhanced);
           setDetail(enhanced);
-          if (!codesLoadedFromDb.current) {
-            setCodes(prev => ({
-              brute: isPlaceholder(prev.brute) ? enhanced.starterCode : prev.brute,
-              better: isPlaceholder(prev.better) ? enhanced.starterCode : prev.better,
-              optimal: isPlaceholder(prev.optimal) ? enhanced.starterCode : prev.optimal,
-            }));
+          if (enhanced.starterCode) {
+            setCodes(prev => {
+              const bruteStarter = getApproachStarterCode(enhanced.starterCode, 'brute');
+              const betterStarter = getApproachStarterCode(enhanced.starterCode, 'better');
+              const optimalStarter = getApproachStarterCode(enhanced.starterCode, 'optimal');
+              return {
+                brute: isPlaceholderOrEmpty(prev.brute, bruteStarter) ? bruteStarter : prev.brute,
+                better: isPlaceholderOrEmpty(prev.better, betterStarter) ? betterStarter : prev.better,
+                optimal: isPlaceholderOrEmpty(prev.optimal, optimalStarter) ? optimalStarter : prev.optimal,
+              };
+            });
           }
           setIsGenerating(false);
           return;
         }
       }
 
-      // If Custom Mode, check custom_problems table instead of generator or roadway
+      // If Custom Mode, check custom_problems table
       if (customMode && customId) {
         const { data: customData } = await supabase
           .from('custom_problems')
@@ -443,10 +551,10 @@ const ProblemWorkspace = () => {
           const enhanced: EnhancedDetail = {
             key: customId,
             description: c.description,
-            examples: [], // Custom problems might not have formal examples array yet
+            examples: [],
             starterCode: c.starter_code,
             testCases: c.test_cases || [],
-            functionName: 'solve', // Defaults for custom
+            functionName: 'solve',
             returnType: 'void',
             params: [],
             constraints: [],
@@ -454,12 +562,17 @@ const ProblemWorkspace = () => {
           };
           setCachedDetail(key, enhanced);
           setDetail(enhanced);
-          if (!codesLoadedFromDb.current || force) {
-            setCodes(prev => ({
-              brute: (force || isPlaceholder(prev.brute)) ? enhanced.starterCode : prev.brute,
-              better: (force || isPlaceholder(prev.better)) ? enhanced.starterCode : prev.better,
-              optimal: (force || isPlaceholder(prev.optimal)) ? enhanced.starterCode : prev.optimal,
-            }));
+          if (enhanced.starterCode) {
+            setCodes(prev => {
+              const bruteStarter = getApproachStarterCode(enhanced.starterCode, 'brute');
+              const betterStarter = getApproachStarterCode(enhanced.starterCode, 'better');
+              const optimalStarter = getApproachStarterCode(enhanced.starterCode, 'optimal');
+              return {
+                brute: isPlaceholderOrEmpty(prev.brute, bruteStarter) ? bruteStarter : prev.brute,
+                better: isPlaceholderOrEmpty(prev.better, betterStarter) ? betterStarter : prev.better,
+                optimal: isPlaceholderOrEmpty(prev.optimal, optimalStarter) ? optimalStarter : prev.optimal,
+              };
+            });
           }
           setIsGenerating(false);
           return;
@@ -467,28 +580,45 @@ const ProblemWorkspace = () => {
       }
 
       setIsGenerating(true);
-      const loadingToast = force ? toast.loading('Re-generating problem with high-quality test cases...') : null;
+      const loadingToast = force ? toast.loading('Generating LeetCode problem details & signatures...') : null;
       
-      // Cache miss or force → invoke edge function
-      const { data, error } = await supabase.functions.invoke('generate-problem-detail', {
-        body: {
-          problem_key: key,
-          title: roadmapProblem.title,
-          difficulty: roadmapProblem.difficulty,
-          topic: (roadmapProblem as any).topic || '',
-          force: force
-        },
-      });
+      let generated: any = null;
+
+      // 1. Invoke Supabase Edge Function
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-problem-detail', {
+          body: {
+            problem_key: key,
+            title: roadmapProblem.title,
+            difficulty: roadmapProblem.difficulty,
+            topic: (roadmapProblem as any).topic || '',
+            force: force
+          },
+        });
+        if (!error && data?.detail) {
+          generated = data.detail;
+        }
+      } catch (invokeErr) {
+        console.warn('Edge function invoke error, falling back to Primary AI...', invokeErr);
+      }
+
+      // 2. Primary AI fallback if edge function was unavailable or had no detail
+      if (!generated) {
+        try {
+          generated = await generateProblemDetailViaAI(roadmapProblem.title, roadmapProblem.difficulty, (roadmapProblem as any).topic || '');
+        } catch (aiErr) {
+          console.error('generateProblemDetailViaAI error:', aiErr);
+        }
+      }
 
       if (loadingToast) toast.dismiss(loadingToast);
 
-      if (error) {
+      if (!generated) {
         setIsGenerating(false);
-        setGenerateError('Failed to generate problem details. Please try again.');
+        setGenerateError('Failed to generate problem details. Please try the "Regenerate Question" button.');
         return;
       }
       
-      const generated = data?.detail;
       if (generated) {
         // Client-side parsing of test cases
         let testCases = (generated.testCases || []).map((tc: any) => ({
@@ -503,7 +633,6 @@ const ProblemWorkspace = () => {
             const raw = String(ex?.input ?? '');
             const inputs: Record<string, string> = {};
             
-            // Try to match "param = value" pairs
             const assignments = raw.split(/,\s*(?=[a-zA-Z_]\w*\s*=)/);
             let matched = 0;
             for (const part of assignments) {
@@ -514,7 +643,6 @@ const ProblemWorkspace = () => {
               }
             }
             
-            // If no assignments found but we have one parameter, use the whole input string
             if (matched === 0 && paramNames.length === 1) {
               inputs[paramNames[0]] = raw.replace(/^[a-zA-Z_]\w*\s*=\s*/, '');
               matched = 1;
@@ -522,13 +650,6 @@ const ProblemWorkspace = () => {
             
             return matched > 0 ? { inputs, expected: String(ex?.output ?? '').trim() } : null;
           }).filter(Boolean) as any[];
-        }
-
-        // AUTO-RETRY once if still no test cases and this wasn't already a forced run
-        if (testCases.length === 0 && !force) {
-          console.warn('AI returned no test cases. Retrying with force...');
-          setIsGenerating(false);
-          return generateFullDetail(true);
         }
 
         const enhanced: EnhancedDetail = {
@@ -546,16 +667,21 @@ const ProblemWorkspace = () => {
         };
         setCachedDetail(key, enhanced);
         setDetail(enhanced);
+
         if (generated.starterCode) {
           setCodes(prev => {
-            // Only update the editor if this is an initial load (not force) and the current code is a placeholder.
-            // If it's a force-regeneration, we leave the editor exactly as it is.
-            const newBrute = (!force && isPlaceholder(prev.brute)) ? generated.starterCode : prev.brute;
-            const newBetter = (!force && isPlaceholder(prev.better)) ? generated.starterCode : prev.better;
-            const newOptimal = (!force && isPlaceholder(prev.optimal)) ? generated.starterCode : prev.optimal;
-            
+            const bruteStarter = getApproachStarterCode(generated.starterCode, 'brute');
+            const betterStarter = getApproachStarterCode(generated.starterCode, 'better');
+            const optimalStarter = getApproachStarterCode(generated.starterCode, 'optimal');
+
+            // CRITICAL: If user already has written code in a tab, DO NOT overwrite it!
+            // Only populate tabs that are empty or have placeholder skeletons.
+            const newBrute = isPlaceholderOrEmpty(prev.brute, bruteStarter) ? bruteStarter : prev.brute;
+            const newBetter = isPlaceholderOrEmpty(prev.better, betterStarter) ? betterStarter : prev.better;
+            const newOptimal = isPlaceholderOrEmpty(prev.optimal, optimalStarter) ? optimalStarter : prev.optimal;
+
             if (newBrute !== prev.brute || newBetter !== prev.better || newOptimal !== prev.optimal) {
-               toast.success('🚀 AI has updated the problem signature across all tabs!');
+               toast.success('🚀 Updated proper function signatures for available approaches!');
             }
             return { brute: newBrute, better: newBetter, optimal: newOptimal };
           });
@@ -563,18 +689,17 @@ const ProblemWorkspace = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setGenerateError('Could not generate problem details. You can still code!');
+      setGenerateError('Could not generate problem details. Please try clicking "Regenerate Question".');
     }
     setIsGenerating(false);
-    if (force) toast.success('Successfully purged bad cache and regenerated problem details!');
+    if (force) toast.success('Successfully regenerated problem details in LeetCode format!');
   }, [key, roadmapProblem, hasHardcodedDetail]);
 
   // ★ STEP 3: Async load of saved codes. Uses a snapshot of `key` at call time
-  // to discard results that arrived after the user has already navigated away.
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
-    const loadKey = key; // snapshot to detect stale results
+    const loadKey = key;
     codesLoadedFromDb.current = false;
 
     const loadAllCodes = async () => {
@@ -593,11 +718,20 @@ const ProblemWorkspace = () => {
               .eq('problem_key', saveKey)
               .maybeSingle();
             if (error) console.error('Load code error:', error);
-            if (data && (data as any).code) { savedCode = (data as any).code; anyFromDb = true; }
+            if (data && (data as any).code) {
+              const candidate = (data as any).code;
+              if (!isPlaceholderOrEmpty(candidate)) {
+                savedCode = candidate;
+                anyFromDb = true;
+              }
+            }
           } catch (e) { console.error('Load code exception:', e); }
         }
         if (!savedCode) {
-          savedCode = localStorage.getItem(`workspace-code-${authUser?.id || 'anon'}-${saveKey}`);
+          const candidate = localStorage.getItem(`workspace-code-${authUser?.id || 'anon'}-${saveKey}`);
+          if (candidate && !isPlaceholderOrEmpty(candidate)) {
+            savedCode = candidate;
+          }
         }
         // Also check legacy key (no approach suffix) for brute force migration
         if (!savedCode && approach === 'brute') {
@@ -609,16 +743,26 @@ const ProblemWorkspace = () => {
                 .eq('user_id', authUser.id)
                 .eq('problem_key', loadKey)
                 .maybeSingle();
-              if (data && (data as any).code) { savedCode = (data as any).code; anyFromDb = true; }
+              if (data && (data as any).code) {
+                const candidate = (data as any).code;
+                if (!isPlaceholderOrEmpty(candidate)) {
+                  savedCode = candidate;
+                  anyFromDb = true;
+                }
+              }
             } catch {}
           }
-          if (!savedCode) savedCode = localStorage.getItem(`workspace-code-${authUser?.id || 'anon'}-${loadKey}`);
+          if (!savedCode) {
+            const candidate = localStorage.getItem(`workspace-code-${authUser?.id || 'anon'}-${loadKey}`);
+            if (candidate && !isPlaceholderOrEmpty(candidate)) {
+              savedCode = candidate;
+            }
+          }
         }
-        if (savedCode) {
-          try { localStorage.setItem(`workspace-code-${authUser?.id || 'anon'}-${saveKey}`, savedCode); } catch {}
-        }
-        const freshPlaceholder = getProblemDetail(loadKey, roadmapProblem?.title || 'Problem', roadmapProblem?.difficulty || 'Medium').starterCode;
-      loaded[approach] = savedCode || freshPlaceholder;
+
+        const baseStarter = detail.starterCode || getProblemDetail(loadKey, roadmapProblem?.title || 'Problem', roadmapProblem?.difficulty || 'Medium').starterCode;
+        const approachStarter = getApproachStarterCode(baseStarter, approach);
+        loaded[approach] = savedCode || approachStarter;
       }
 
       // Discard if user navigated away while we were fetching
@@ -626,7 +770,7 @@ const ProblemWorkspace = () => {
 
       codesLoadedFromDb.current = anyFromDb;
       setCodes({ brute: loaded.brute, better: loaded.better, optimal: loaded.optimal });
-      wsResetSaved(loaded[activeApproach] || getProblemDetail(loadKey, '', '').starterCode);
+      wsResetSaved(loaded[activeApproach] || getApproachStarterCode(detail.starterCode, activeApproach));
       setIsCodeLoading(false);
     };
 
@@ -1388,7 +1532,20 @@ const ProblemWorkspace = () => {
           <ScrollArea className="flex-1 bg-background pb-0">
             <div className="p-4 space-y-5">
               <div>
-                <h2 className="text-xl font-bold text-foreground leading-tight">{roadmapProblem?.title}</h2>
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="text-xl font-bold text-foreground leading-tight">{roadmapProblem?.title}</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generateFullDetail(true)}
+                    disabled={isGenerating}
+                    className="h-7 text-[11px] gap-1 px-2 shrink-0 border-primary/20"
+                    title="Regenerate question description and starter code"
+                  >
+                    <RotateCcw className={`h-3 w-3 ${isGenerating ? 'animate-spin' : ''}`} />
+                    Regenerate
+                  </Button>
+                </div>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`text-[10px] font-bold ${getDifficultyBg(roadmapProblem?.difficulty || 'Medium')}`}>{roadmapProblem?.difficulty}</Badge>
                   <Badge variant="outline" className="text-[10px] font-medium">{(roadmapProblem as any)?.topic}</Badge>
@@ -1784,10 +1941,25 @@ const ProblemWorkspace = () => {
         {showDescription && !focusMode && (
           <div className="hidden md:flex w-[340px] lg:w-[380px] shrink-0 border-r border-panel-border overflow-hidden flex-col">
             <div className="flex items-center justify-between border-b border-panel-border bg-ide-toolbar px-3 py-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Problem</span>
-              <Button variant="ghost" size="sm" onClick={() => setShowDescription(false)} className="h-5 text-[10px]">
-                Hide
-              </Button>
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-primary" /> Problem
+              </span>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateFullDetail(true)}
+                  disabled={isGenerating}
+                  className="h-6 text-[11px] gap-1 px-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all text-foreground"
+                  title="Regenerate question description, constraints, and test cases using AI"
+                >
+                  <RotateCcw className={`h-3 w-3 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <span>Regenerate Question</span>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowDescription(false)} className="h-6 text-[10px] px-1.5">
+                  Hide
+                </Button>
+              </div>
             </div>
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-4">

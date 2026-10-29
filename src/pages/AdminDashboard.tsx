@@ -17,7 +17,9 @@ import {
   RefreshCw,
   Bot,
   MessageSquare,
+  KeyRound,
 } from "lucide-react";
+import AIKeyManager from "@/components/AIKeyManager";
 import { fetchIssues, updateIssueStatus, updateIssueReply, fetchIssueMessages, addIssueMessage, DbIssue, DbIssueMessage } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +99,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeView, setActiveView] = useState<"users" | "issues">("users");
+  const [activeView, setActiveView] = useState<"users" | "issues" | "ai_keys">("users");
   const [issues, setIssues] = useState<DbIssue[]>([]);
   const [issueMessages, setIssueMessages] = useState<DbIssueMessage[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(false);
@@ -504,9 +506,17 @@ const AdminDashboard = () => {
           >
             User Issues
           </button>
+          <button
+            onClick={() => setActiveView("ai_keys")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeView === "ai_keys" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <KeyRound className="h-3 w-3" /> AI API Keys
+          </button>
         </div>
 
-        {activeView === "users" ? (
+        {activeView === "ai_keys" ? (
+          <AIKeyManager />
+        ) : activeView === "users" ? (
           <>
             {/* Search */}
             <div className="flex items-center gap-3">
@@ -678,7 +688,7 @@ const AdminDashboard = () => {
               </Table>
             </div>
           </>
-        ) : (
+        ) : activeView === "issues" ? (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold">User Reported Issues</h3>
@@ -773,7 +783,7 @@ const AdminDashboard = () => {
               </Table>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Action Dialogs */}

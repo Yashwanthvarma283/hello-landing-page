@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODELS = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+const GROQ_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
 const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const LOVABLE_MODEL = 'google/gemini-3.7-flash';
 

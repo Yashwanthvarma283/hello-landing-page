@@ -86,17 +86,32 @@ export default function Lobby() {
         if (data.status !== 'waiting') {
           (async () => {
             try {
-              const { API_BASE_URL } = await import('@/lib/api');
-              const resp = await fetch(`${API_BASE_URL}/api/problems/${p.key}?title=${encodeURIComponent(p.title)}`);
-              if (resp.ok) {
-                const generated = await resp.json();
-                if (generated?.description) {
+              const { data: dbData } = await supabase
+                .from('problem_test_cases')
+                .select('*')
+                .eq('problem_key', p.key)
+                .maybeSingle();
+
+              if (dbData?.description) {
+                setProblem((prev: any) => {
+                  if (prev?.key !== p.key) return prev;
+                  if (dbData.starter_code) setCode(dbData.starter_code);
+                  return {
+                    ...prev,
+                    detail: { ...prev.detail, description: dbData.description }
+                  };
+                });
+              } else {
+                const { data: edgeData } = await supabase.functions.invoke('generate-problem-detail', {
+                  body: { problem_key: p.key, title: p.title },
+                });
+                if (edgeData?.detail?.description) {
                   setProblem((prev: any) => {
                     if (prev?.key !== p.key) return prev;
-                    if (generated.starterCode) setCode(generated.starterCode);
+                    if (edgeData.detail.starterCode) setCode(edgeData.detail.starterCode);
                     return {
                       ...prev,
-                      detail: { ...prev.detail, description: generated.description }
+                      detail: { ...prev.detail, description: edgeData.detail.description }
                     };
                   });
                 }
@@ -308,11 +323,20 @@ export default function Lobby() {
 
     // Background enhancement (non-blocking)
     try {
-      const { API_BASE_URL } = await import('@/lib/api');
-      const resp = await fetch(`${API_BASE_URL}/api/problems/${picked.key}?title=${encodeURIComponent(picked.title)}`);
-      if (resp.ok) {
-        const generated = await resp.json();
-        if (generated?.description) {
+      const { data: dbData } = await supabase
+        .from('problem_test_cases')
+        .select('*')
+        .eq('problem_key', picked.key)
+        .maybeSingle();
+
+      const generated = dbData?.description ? {
+        description: dbData.description,
+        starterCode: dbData.starter_code
+      } : (await supabase.functions.invoke('generate-problem-detail', {
+        body: { problem_key: picked.key, title: picked.title },
+      }))?.data?.detail;
+
+      if (generated?.description) {
           const enhancedUpdate = {
             problem_key: picked.key,
             current_code: generated.starterCode || starterCode,
@@ -348,7 +372,6 @@ export default function Lobby() {
             await supabase.from('interview_lobbies').update({ current_code: generated.starterCode }).eq('id', lobby.id);
           }
         }
-      }
     } catch (e) {
       console.error("Lobby enhancement failed:", e);
     }

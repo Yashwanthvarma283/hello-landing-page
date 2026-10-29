@@ -158,22 +158,43 @@ const InterviewSimulator = () => {
     setLoading(false);
 
     try {
-      const { API_BASE_URL } = await import('@/lib/api');
-      const resp = await fetch(`${API_BASE_URL}/api/problems/${picked.key}?title=${encodeURIComponent(picked.title)}`);
-      if (resp.ok) {
-        const generated = await resp.json();
-        if (generated?.description) {
-          const isPlaceholder = (c: string) => !c || c.trim().length < 50 || c.includes('// 🤖 AI is generating') || c.includes('public void solve()');
+      // Check shared Supabase DB cache first
+      const { data: dbData } = await supabase
+        .from('problem_test_cases')
+        .select('*')
+        .eq('problem_key', picked.key)
+        .maybeSingle();
+
+      if (dbData && dbData.description) {
+        setProblem((prev: any) => {
+          if (prev?.key !== picked.key) return prev;
+          if (dbData.starter_code) setCode(dbData.starter_code);
+          return {
+            ...prev,
+            detail: {
+              ...prev.detail,
+              description: dbData.description,
+              starterCode: dbData.starter_code || prev.detail.starterCode,
+              testCases: dbData.test_cases || prev.detail.testCases,
+            }
+          };
+        });
+      } else {
+        const { data: edgeData } = await supabase.functions.invoke('generate-problem-detail', {
+          body: { problem_key: picked.key, title: picked.title, difficulty: picked.difficulty },
+        });
+        if (edgeData?.detail?.description) {
+          const d = edgeData.detail;
           setProblem((prev: any) => {
             if (prev?.key !== picked.key) return prev;
-            if (generated.starterCode && isPlaceholder(code)) setCode(generated.starterCode);
+            if (d.starterCode) setCode(d.starterCode);
             return {
               ...prev,
               detail: {
                 ...prev.detail,
-                description: generated.description || prev.detail.description,
-                starterCode: generated.starterCode || prev.detail.starterCode,
-                testCases: generated.testCases || prev.detail.testCases,
+                description: d.description,
+                starterCode: d.starterCode || prev.detail.starterCode,
+                testCases: d.testCases || prev.detail.testCases,
               }
             };
           });
