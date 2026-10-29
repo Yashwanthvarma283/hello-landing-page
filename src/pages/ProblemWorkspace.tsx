@@ -136,10 +136,12 @@ Return ONLY a valid JSON object with:
 
   try {
     const raw = await callPrimaryAI(prompt, "You are a LeetCode problem designer. Return ONLY a valid JSON object.");
-    const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsed = JSON.parse(jsonStr);
-    if (parsed && parsed.starterCode && parsed.description) {
-      return parsed;
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed && (parsed.starterCode || parsed.description)) {
+        return parsed;
+      }
     }
   } catch (err) {
     console.warn('generateProblemDetailViaAI parsing failed:', err);
@@ -667,6 +669,27 @@ const ProblemWorkspace = () => {
         };
         setCachedDetail(key, enhanced);
         setDetail(enhanced);
+
+        // Cache in Supabase DB for instant subsequent loads
+        try {
+          supabase.from('problem_test_cases').upsert({
+            problem_key: key,
+            title: roadmapProblem.title,
+            difficulty: roadmapProblem.difficulty,
+            topic: (roadmapProblem as any).topic || '',
+            description: enhanced.description || '',
+            examples: enhanced.examples || [],
+            constraints: enhanced.constraints || [],
+            hints: enhanced.hints || [],
+            starter_code: enhanced.starterCode || '',
+            function_name: enhanced.functionName || 'solve',
+            return_type: enhanced.returnType || 'void',
+            params: enhanced.params || [],
+            test_cases: enhanced.testCases || [],
+          }, { onConflict: 'problem_key' }).then(() => {});
+        } catch (dbErr) {
+          console.warn('Failed to cache problem_test_cases in DB:', dbErr);
+        }
 
         if (generated.starterCode) {
           setCodes(prev => {
