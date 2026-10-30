@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -76,6 +76,7 @@ export type Database = {
           enabled: boolean
           error_count: number
           id: string
+          is_primary: boolean
           label: string
           last_error: string | null
           last_used_at: string | null
@@ -92,6 +93,7 @@ export type Database = {
           enabled?: boolean
           error_count?: number
           id?: string
+          is_primary?: boolean
           label: string
           last_error?: string | null
           last_used_at?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           enabled?: boolean
           error_count?: number
           id?: string
+          is_primary?: boolean
           label?: string
           last_error?: string | null
           last_used_at?: string | null
@@ -142,6 +145,95 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ai_settings: {
+        Row: {
+          id: boolean
+          ide_use_primary: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          ide_use_primary?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          ide_use_primary?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_logs: {
+        Row: {
+          completion_tokens: number
+          created_at: string
+          error: string | null
+          feature: string
+          http_status: number | null
+          id: string
+          key_id: string | null
+          key_label: string | null
+          latency_ms: number | null
+          model: string
+          prompt_tokens: number
+          provider: string
+          rate_limit_remaining_requests: string | null
+          rate_limit_remaining_tokens: string | null
+          status: string
+          total_tokens: number
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string
+          error?: string | null
+          feature: string
+          http_status?: number | null
+          id?: string
+          key_id?: string | null
+          key_label?: string | null
+          latency_ms?: number | null
+          model?: string
+          prompt_tokens?: number
+          provider?: string
+          rate_limit_remaining_requests?: string | null
+          rate_limit_remaining_tokens?: string | null
+          status?: string
+          total_tokens?: number
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string
+          error?: string | null
+          feature?: string
+          http_status?: number | null
+          id?: string
+          key_id?: string | null
+          key_label?: string | null
+          latency_ms?: number | null
+          model?: string
+          prompt_tokens?: number
+          provider?: string
+          rate_limit_remaining_requests?: string | null
+          rate_limit_remaining_tokens?: string | null
+          status?: string
+          total_tokens?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "ai_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       analyses: {
         Row: {
@@ -452,6 +544,13 @@ export type Database = {
             columns: ["question_id"]
             isOneToOne: false
             referencedRelation: "daily_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_submissions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "daily_questions_public"
             referencedColumns: ["id"]
           },
         ]
@@ -1057,15 +1156,10 @@ export type Database = {
           github_repo: string | null
           github_token: string | null
           id: string
-          last_active: string | null
-          midnight_theme_enabled: boolean | null
-          midnight_theme_unlocked: boolean | null
           requested_role: string | null
           status: string
-          streak_freeze_count: number | null
           username: string
           xp: number | null
-          xp_boost_until: string | null
         }
         Insert: {
           ban_until?: string | null
@@ -1076,15 +1170,10 @@ export type Database = {
           github_repo?: string | null
           github_token?: string | null
           id: string
-          last_active?: string | null
-          midnight_theme_enabled?: boolean | null
-          midnight_theme_unlocked?: boolean | null
           requested_role?: string | null
           status?: string
-          streak_freeze_count?: number | null
           username: string
           xp?: number | null
-          xp_boost_until?: string | null
         }
         Update: {
           ban_until?: string | null
@@ -1095,15 +1184,10 @@ export type Database = {
           github_repo?: string | null
           github_token?: string | null
           id?: string
-          last_active?: string | null
-          midnight_theme_enabled?: boolean | null
-          midnight_theme_unlocked?: boolean | null
           requested_role?: string | null
           status?: string
-          streak_freeze_count?: number | null
           username?: string
           xp?: number | null
-          xp_boost_until?: string | null
         }
         Relationships: []
       }
@@ -1300,6 +1384,7 @@ export type Database = {
       }
       test_cases: {
         Row: {
+          content: string
           created_at: string
           expected_output: string
           id: string
@@ -1310,6 +1395,7 @@ export type Database = {
           variable_name: string
         }
         Insert: {
+          content: string
           created_at?: string
           expected_output?: string
           id?: string
@@ -1320,6 +1406,7 @@ export type Database = {
           variable_name?: string
         }
         Update: {
+          content?: string
           created_at?: string
           expected_output?: string
           id?: string
@@ -1414,27 +1501,6 @@ export type Database = {
           lifetime_spent?: number
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      user_daily_xp: {
-        Row: {
-          earned_date: string | null
-          id: string
-          problem_key: string
-          user_id: string | null
-        }
-        Insert: {
-          earned_date?: string | null
-          id?: string
-          problem_key: string
-          user_id?: string | null
-        }
-        Update: {
-          earned_date?: string | null
-          id?: string
-          problem_key?: string
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -1537,8 +1603,77 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          created_at: string
+          id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
+      daily_questions_public: {
+        Row: {
+          constraints: Json | null
+          created_at: string | null
+          daily_date: string | null
+          description: string | null
+          difficulty: string | null
+          examples: Json | null
+          id: string | null
+          is_active: boolean | null
+          slug: string | null
+          starter_code: string | null
+          title: string | null
+          topic: string | null
+          updated_at: string | null
+          visible_test_cases: Json | null
+        }
+        Insert: {
+          constraints?: Json | null
+          created_at?: string | null
+          daily_date?: string | null
+          description?: string | null
+          difficulty?: string | null
+          examples?: Json | null
+          id?: string | null
+          is_active?: boolean | null
+          slug?: string | null
+          starter_code?: string | null
+          title?: string | null
+          topic?: string | null
+          updated_at?: string | null
+          visible_test_cases?: Json | null
+        }
+        Update: {
+          constraints?: Json | null
+          created_at?: string | null
+          daily_date?: string | null
+          description?: string | null
+          difficulty?: string | null
+          examples?: Json | null
+          id?: string | null
+          is_active?: boolean | null
+          slug?: string | null
+          starter_code?: string | null
+          title?: string | null
+          topic?: string | null
+          updated_at?: string | null
+          visible_test_cases?: Json | null
+        }
+        Relationships: []
+      }
       public_profile_stats: {
         Row: {
           attempted_count: number | null

@@ -15,6 +15,83 @@
       "when": 1793151656684,
       "tag": "0001_create_ai_pool_track_key_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793379212433,
+      "tag": "0002_bootstrap_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793379251940,
+      "tag": "0003_core_tables_20260308",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793379277570,
+      "tag": "0004_roles_and_cache_202604",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793379306653,
+      "tag": "0005_agent_issues_messaging_202605",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793379356154,
+      "tag": "0006_lobbies_realtime_xp_202605b1",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793379374026,
+      "tag": "0007_moderator_policies_202605b2",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793379414421,
+      "tag": "0008_daily_questions_coins_202606",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793379452572,
+      "tag": "0009_store_effects_20260609",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793379472847,
+      "tag": "0010_cosmetics_streak_primary_202607",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793379495511,
+      "tag": "0011_ai_usage_logs_and_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793379513867,
+      "tag": "0012_backfill_data_api_grants",
+      "breakpoints": true
     }
   ]
 }
