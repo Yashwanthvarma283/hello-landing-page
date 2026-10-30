@@ -8,7 +8,11 @@
 // No auto-fallback — if the primary key hits a limit, AI features fail until
 // the admin manually sets a different key as primary.
 
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { invalidatePoolCache, listProviderModels, GROQ_BASE_URL } from '../_shared/ai-pool.ts';
 
