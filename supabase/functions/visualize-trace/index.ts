@@ -62,7 +62,7 @@ serve(async (req) => {
           ? "Rate limited, try again in a moment."
           : response.status === 402
           ? "AI credits exhausted."
-          : "AI error while tracing.";
+          : await response.json().then((j: any) => j?.error || "AI error while tracing.").catch(() => "AI error while tracing.");
       return new Response(JSON.stringify({ error: msg }), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
