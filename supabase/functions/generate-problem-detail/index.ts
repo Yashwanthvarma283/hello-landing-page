@@ -118,7 +118,8 @@ Match the REAL LeetCode problem if it exists. Include description, constraints, 
   if (!response.ok) {
     const status = response.status;
     const t = await response.text().catch(() => "");
-    const err: any = new Error(`AI gateway error ${status}`);
+    let msg = `AI error ${status}`; try { msg = JSON.parse(t).error || msg; } catch {}
+    const err: any = new Error(msg);
     err.status = status;
     err.body = t;
     throw err;

@@ -46,7 +46,7 @@ Use clear formatting with headers, code blocks, and diagrams.`;
       }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), {
+      return new Response(await response.text(), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
