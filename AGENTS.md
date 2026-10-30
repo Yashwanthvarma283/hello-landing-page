@@ -1,3 +1,4 @@
 - All server-side AI calls go through `supabase/functions/_shared/ai-pool.ts` (admin primary key + `ai_usage_logs` logging); pass `req` so usage is attributed to the user. Why: one admin-controlled key and complete per-user/feature analytics.
 - The IDE chatbot provider is a global server setting (`ai_settings.ide_use_primary`), never browser storage; raw API keys never reach the client. Why: settings must apply to all users and keys must stay secret.
 - This project's database is external (not Lovable Cloud); schema changes live in `supabase/manual-sql/` and must be run by the owner. Why: migrations cannot be applied from here.
+- AI calls that used to hit the Lovable gateway use `supabase/functions/_shared/ai-compat.ts` (`aiGatewayFetch`), which routes through ai-pool and turns forced tool-calls into JSON mode. Why: the external backend has no gateway key, and JSON mode is more reliable than tool calling across providers.
