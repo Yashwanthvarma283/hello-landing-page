@@ -19,6 +19,7 @@ import {
   MessageSquare,
   KeyRound,
 } from "lucide-react";
+import AIUsageAnalytics from "@/components/AIUsageAnalytics";
 import AIKeyManager from "@/components/AIKeyManager";
 import { fetchIssues, updateIssueStatus, updateIssueReply, fetchIssueMessages, addIssueMessage, DbIssue, DbIssueMessage } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -99,7 +100,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeView, setActiveView] = useState<"users" | "issues" | "ai_keys">("users");
+  const [activeView, setActiveView] = useState<"users" | "issues" | "ai_keys" | "ai_usage">("users");
   const [issues, setIssues] = useState<DbIssue[]>([]);
   const [issueMessages, setIssueMessages] = useState<DbIssueMessage[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(false);
@@ -512,10 +513,18 @@ const AdminDashboard = () => {
           >
             <KeyRound className="h-3 w-3" /> AI API Keys
           </button>
+          <button
+            onClick={() => setActiveView("ai_usage")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeView === "ai_usage" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            AI Usage
+          </button>
         </div>
 
         {activeView === "ai_keys" ? (
           <AIKeyManager />
+        ) : activeView === "ai_usage" ? (
+          <AIUsageAnalytics />
         ) : activeView === "users" ? (
           <>
             {/* Search */}

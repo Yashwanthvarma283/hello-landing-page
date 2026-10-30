@@ -42,12 +42,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  getIDEChatbotMode,
-  getIDEChatbotConfig,
-  setIDEChatbotMode,
-  IDEChatbotConfig,
-} from "@/lib/ai-backend";
 
 // Derive the project URL from the initialized supabase client
 const SUPABASE_URL =
@@ -244,7 +238,8 @@ const AIKeyManager = () => {
 
   // IDE Chatbot State
   const [chatbotMode, setChatbotMode] = useState<"default" | "custom">("default");
-  const [activeChatbotConfig, setActiveChatbotConfig] = useState<IDEChatbotConfig | null>(null);
+  const [ideUsePrimary, setIdeUsePrimary] = useState(false);
+  const [ideSaving, setIdeSaving] = useState(false);
 
   // Set-Chatbot-Key confirmation dialog (when raw key is needed)
   const [chatbotDialog, setChatbotDialog] = useState<{
@@ -323,12 +318,30 @@ const AIKeyManager = () => {
   >({});
 
   // ── Sync Chatbot Mode on load ──────────────────────────────────────────────
-  const syncChatbotState = useCallback(() => {
-    const mode = getIDEChatbotMode();
-    const cfg = getIDEChatbotConfig();
-    setChatbotMode(mode);
-    setActiveChatbotConfig(cfg);
+  // Global, server-side setting — applies to every user's IDE chatbot.
+  const syncChatbotState = useCallback(async () => {
+    try {
+      const res = await callAdmin({ action: "get_settings" });
+      const on = !!res.settings?.ide_use_primary;
+      setIdeUsePrimary(on);
+      setChatbotMode(on ? "custom" : "default");
+    } catch {
+      /* settings table may not exist yet */
+    }
   }, []);
+
+  const setIdeOverride = async (enabled: boolean) => {
+    setIdeSaving(true);
+    try {
+      await callAdmin({ action: "set_ide_override", enabled });
+      setIdeUsePrimary(enabled);
+      setChatbotMode(enabled ? "custom" : "default");
+      toast.success(enabled ? "IDE chatbot now uses the active primary key for all users" : "IDE chatbot restored to the default Gemini setup");
+    } catch (e: any) {
+      toast.error("Failed to update IDE chatbot: " + e.message);
+    }
+    setIdeSaving(false);
+  };
 
   // ── Load keys ──────────────────────────────────────────────────────────────
   const loadKeys = useCallback(async () => {
@@ -424,7 +437,7 @@ const AIKeyManager = () => {
           // ignore
         }
         // Cache the raw secret locally for direct IDE chatbot integration
-        localStorage.setItem(`ai_key_secret_${addedKeyId}`, addForm.api_key.trim());
+
       }
 
       toast.success(`API key added with model "${addForm.model}"`);
@@ -713,44 +726,8 @@ const AIKeyManager = () => {
         // Backend doesn't support set_primary action, feature configs already handled it
       }
 
-      // 4. Save to localStorage for instant client routing
-      localStorage.setItem("primary_ai_key_id", targetKey.id);
-      localStorage.setItem("primary_ai_model", chosenModel);
-      if (rawKey) {
-        localStorage.setItem(`ai_key_secret_${targetKey.id}`, rawKey);
-        localStorage.setItem(
-          "primary_ai_config",
-          JSON.stringify({
-            provider: targetKey.provider,
-            baseUrl: targetKey.base_url,
-            apiKey: rawKey,
-            model: chosenModel,
-            label: targetKey.label,
-          })
-        );
-      }
-
-      // 5. If "Set also for the IDE chatbot" was checked:
-      if (alsoForChat) {
-        if (rawKey) {
-          setIDEChatbotMode("custom", {
-            provider: targetKey.provider,
-            baseUrl: targetKey.base_url,
-            apiKey: rawKey,
-            model: chosenModel,
-            label: targetKey.label,
-          });
-          syncChatbotState();
-          toast.success(`IDE Chatbot also configured to use "${targetKey.label}" (${chosenModel})`);
-        } else {
-          setChatbotDialog({
-            open: true,
-            key: targetKey,
-            rawApiKey: "",
-            model: chosenModel,
-          });
-        }
-      }
+      // IDE chatbot override is a global server-side setting
+      if (alsoForChat) await setIdeOverride(true);
 
       toast.success(`"${targetKey.label}" is now the primary key with model ${chosenModel}`);
       setSetPrimaryDialog({
@@ -770,63 +747,12 @@ const AIKeyManager = () => {
   };
 
   // ── IDE Chatbot Controls ───────────────────────────────────────────────────
-  const openSetChatbotKeyDialog = (key: AIKey | null) => {
-    if (!key) return;
-    const cachedRaw = localStorage.getItem(`ai_key_secret_${key.id}`) || "";
-    const activeModel = key.model || PROVIDER_DEFAULT_MODELS[key.provider]?.[0]?.id || "";
-
-    if (cachedRaw) {
-      // Key secret is already cached locally, activate immediately
-      setIDEChatbotMode("custom", {
-        provider: key.provider,
-        baseUrl: key.base_url,
-        apiKey: cachedRaw,
-        model: activeModel,
-        label: key.label,
-      });
-      syncChatbotState();
-      toast.success(`IDE Chatbot is now set to "${key.label}" (${activeModel})`);
-    } else {
-      // Prompt for raw key once to enable browser direct chat
-      setChatbotDialog({
-        open: true,
-        key,
-        rawApiKey: "",
-        model: activeModel,
-      });
-    }
-  };
-
+  const openSetChatbotKeyDialog = (_key: AIKey | null) => setIdeOverride(true);
   const handleConfirmChatbotKey = () => {
-    if (!chatbotDialog.key) return;
-    if (!chatbotDialog.rawApiKey.trim()) {
-      return toast.error("Please enter the API key for direct chatbot execution");
-    }
-    const key = chatbotDialog.key;
-    const raw = chatbotDialog.rawApiKey.trim();
-    const model = chatbotDialog.model || key.model || "llama-3.3-70b-versatile";
-
-    // Cache secret locally
-    localStorage.setItem(`ai_key_secret_${key.id}`, raw);
-
-    setIDEChatbotMode("custom", {
-      provider: key.provider,
-      baseUrl: key.base_url,
-      apiKey: raw,
-      model,
-      label: key.label,
-    });
-
-    syncChatbotState();
-    toast.success(`IDE Chatbot set to "${key.label}" (${model})`);
     setChatbotDialog({ open: false, key: null, rawApiKey: "", model: "" });
+    setIdeOverride(true);
   };
-
-  const handleRestoreDefaultChatbot = () => {
-    setIDEChatbotMode("default");
-    syncChatbotState();
-    toast.success("IDE Chatbot restored to Default Gemini setup");
-  };
+  const handleRestoreDefaultChatbot = () => setIdeOverride(false);
 
   // ── Derived ────────────────────────────────────────────────────────────────
   const primaryKey = keys.find((k) => k.is_primary) || keys[0];
@@ -925,9 +851,9 @@ const AIKeyManager = () => {
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-bold text-foreground">IDE Chatbot Configuration</p>
-                {chatbotMode === "custom" && activeChatbotConfig ? (
+                {ideUsePrimary && primaryKey ? (
                   <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] gap-1">
-                    <Check className="h-3 w-3" /> Custom Key ({activeChatbotConfig.provider.toUpperCase()} · {activeChatbotConfig.model})
+                    <Check className="h-3 w-3" /> Using primary key ({primaryKey.provider.toUpperCase()} · {primaryKey.model || "no model"})
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="text-[10px] gap-1">
@@ -936,40 +862,36 @@ const AIKeyManager = () => {
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {chatbotMode === "custom" && activeChatbotConfig
-                  ? `The main IDE chat is using ${activeChatbotConfig.label || "your custom key"} (${activeChatbotConfig.model}). You can revert to default anytime.`
+                {ideUsePrimary
+                  ? `The IDE chatbot for all users runs on the active primary key${primaryKey ? ` "${primaryKey.label}"` : ""}. Click "Remove for IDE" to go back to Gemini.`
                   : "The main IDE chatbot is using the built-in Gemini setup (google/gemini-3.7-flash)."}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Set also for the IDE chatbot */}
-            <Button
-              variant={chatbotMode === "custom" ? "secondary" : "default"}
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              onClick={() => openSetChatbotKeyDialog(primaryKey || keys[0])}
-              disabled={keys.length === 0}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Set also for the IDE chatbot
-            </Button>
-
-            {/* Default IDE chatbot */}
-            <Button
-              variant="outline"
-              size="sm"
-              className={`h-8 gap-1.5 text-xs ${
-                chatbotMode === "default"
-                  ? "border-primary/50 text-primary bg-primary/5 font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={handleRestoreDefaultChatbot}
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Default IDE chatbot
-            </Button>
+            {ideUsePrimary ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={handleRestoreDefaultChatbot}
+                disabled={ideSaving}
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Remove for IDE
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => openSetChatbotKeyDialog(primaryKey)}
+                disabled={ideSaving || !primaryKey}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Also use for IDE chatbot
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -979,7 +901,7 @@ const AIKeyManager = () => {
         <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Architecture:</strong> Core AI features route through the{" "}
-          <strong>Primary API Key</strong> set below. The IDE chatbot defaults to the existing <strong>Gemini setup</strong> and can optionally be switched to use your configured API key via <strong>"Set also for the IDE chatbot"</strong>, with instant one-click return via <strong>"Default IDE chatbot"</strong>.
+          <strong>Primary API Key</strong> set below. The IDE chatbot defaults to the existing <strong>Gemini setup</strong> and can optionally be switched to use your configured API key via <strong>"Also use for IDE chatbot"</strong>, with instant one-click return via <strong>"Remove for IDE"</strong>.
         </p>
       </div>
 
@@ -1026,7 +948,7 @@ const AIKeyManager = () => {
             {[...(primaryKey ? [primaryKey] : []), ...nonPrimaryKeys].map((key) => {
               const ts = testState[key.id];
               const isChatbotKey =
-                chatbotMode === "custom" && activeChatbotConfig?.provider === key.provider;
+                ideUsePrimary && !!key.is_primary;
 
               return (
                 <div
@@ -1539,9 +1461,9 @@ const AIKeyManager = () => {
                   className="mt-0.5 rounded border-border"
                 />
                 <div>
-                  <span className="font-medium text-foreground">Set also for the IDE chatbot</span>
+                  <span className="font-medium text-foreground">Also use for IDE chatbot</span>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Routes the main IDE tutor chatbot through this key too. You can revert to Default IDE chatbot (Gemini) anytime.
+                    Routes the main IDE tutor chatbot through this key too. Applies to all users. Use "Remove for IDE" to revert to Gemini.
                   </p>
                 </div>
               </label>

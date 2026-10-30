@@ -293,6 +293,74 @@ Deno.serve(async (req) => {
         return json({ stats: keys ?? [] });
       }
 
+      // ── GLOBAL SETTINGS (IDE chatbot override) ───────────────────────────
+      case 'get_settings': {
+        const { data } = await supabase.from('ai_settings').select('*').eq('id', true).maybeSingle();
+        return json({ settings: { ide_use_primary: !!data?.ide_use_primary, updated_at: data?.updated_at ?? null } });
+      }
+      case 'set_ide_override': {
+        const enabled = body.enabled === true;
+        const { error } = await supabase
+          .from('ai_settings')
+          .upsert({ id: true, ide_use_primary: enabled, updated_at: new Date().toISOString(), updated_by: adminId });
+        if (error) throw new Error(error.message);
+        return json({ settings: { ide_use_primary: enabled } });
+      }
+
+      // ── USAGE ANALYTICS ───────────────────────────────────────────────────
+      case 'usage_analytics': {
+        const days = Math.min(Math.max(Number(body.days) || 7, 1), 90);
+        const since = new Date(Date.now() - days * 86400_000).toISOString();
+        const rows: any[] = [];
+        for (let from = 0; from < 50_000; from += 1000) {
+          const { data, error } = await supabase
+            .from('ai_usage_logs')
+            .select('id,created_at,user_id,feature,provider,model,key_label,status,http_status,prompt_tokens,completion_tokens,total_tokens,latency_ms,rate_limit_remaining_requests,rate_limit_remaining_tokens,error')
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .range(from, from + 999);
+          if (error) throw new Error(error.message);
+          rows.push(...(data ?? []));
+          if (!data || data.length < 1000) break;
+        }
+        const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+        const names: Record<string, { username: string; email: string | null }> = {};
+        for (let i = 0; i < userIds.length; i += 200) {
+          const { data } = await supabase.from('profiles').select('id,username,email').in('id', userIds.slice(i, i + 200));
+          for (const p of data ?? []) names[p.id] = { username: p.username, email: p.email };
+        }
+        const agg = (keyFn: (r: any) => string) => {
+          const m = new Map<string, any>();
+          for (const r of rows) {
+            const k = keyFn(r);
+            const a = m.get(k) ?? { key: k, requests: 0, ok: 0, rate_limited: 0, errors: 0, prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, features: {} as Record<string, number>, last_at: r.created_at };
+            a.requests++;
+            if (r.status === 'ok') a.ok++; else if (r.status === 'rate_limited') a.rate_limited++; else a.errors++;
+            a.prompt_tokens += r.prompt_tokens || 0;
+            a.completion_tokens += r.completion_tokens || 0;
+            a.total_tokens += r.total_tokens || 0;
+            a.features[r.feature] = (a.features[r.feature] ?? 0) + 1;
+            if (r.created_at > a.last_at) a.last_at = r.created_at;
+            m.set(k, a);
+          }
+          return [...m.values()].sort((x, y) => y.total_tokens - x.total_tokens || y.requests - x.requests);
+        };
+        const byUser = agg((r) => r.user_id ?? 'anonymous').map((u) => ({
+          ...u,
+          user_id: u.key === 'anonymous' ? null : u.key,
+          username: names[u.key]?.username ?? (u.key === 'anonymous' ? 'Anonymous / system' : 'Unknown user'),
+          email: names[u.key]?.email ?? null,
+        }));
+        const byFeature = agg((r) => r.feature);
+        const byModel = agg((r) => r.model || 'unknown');
+        const recent = rows.slice(0, 200).map((r) => ({ ...r, username: r.user_id ? names[r.user_id]?.username ?? 'Unknown' : 'Anonymous' }));
+        const totals = byFeature.reduce(
+          (t, f) => ({ requests: t.requests + f.requests, total_tokens: t.total_tokens + f.total_tokens, rate_limited: t.rate_limited + f.rate_limited, errors: t.errors + f.errors }),
+          { requests: 0, total_tokens: 0, rate_limited: 0, errors: 0 },
+        );
+        return json({ days, totals: { ...totals, users: userIds.length }, byUser, byFeature, byModel, recent });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }

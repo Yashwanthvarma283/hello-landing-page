@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { chatWithFeatureAI, getAISettings, getUserIdFromRequest, logAIUsage } from "../_shared/ai-pool.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,92 +7,44 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
 const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 const LOVABLE_MODEL = 'google/gemini-3.7-flash';
 
-function getKeys(): string[] {
-  const keys: string[] = [];
-  for (let i = 1; i <= 5; i++) {
-    const k = Deno.env.get(`GROQ_API_KEY_${i}`);
-    if (k) keys.push(k);
-  }
-  return keys;
-}
-
-let rotationCursor = 0;
-
-async function callLovable(messages: any[], temperature = 0.3): Promise<string> {
+// Default IDE chatbot: the built-in Gemini setup (unchanged). Usage is logged.
+async function callLovable(messages: any[], temperature: number, userId: string | null): Promise<string> {
   const key = Deno.env.get('LOVABLE_API_KEY');
   if (!key) throw new Error('LOVABLE_API_KEY not configured');
-
+  const started = Date.now();
   const res = await fetch(LOVABLE_URL, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: LOVABLE_MODEL, messages, temperature }),
   });
-
+  const base = { userId, feature: 'ide-chatbot', provider: 'lovable', model: LOVABLE_MODEL, latencyMs: Date.now() - started, httpStatus: res.status, headers: res.headers };
   if (!res.ok) {
     const text = await res.text();
+    await logAIUsage({ ...base, status: res.status === 429 ? 'rate_limited' : 'error', error: text });
     if (res.status === 429) throw new Error('RATE_LIMIT: Too many requests, please wait a moment and try again.');
     if (res.status === 402) throw new Error('CREDITS: AI credits exhausted. Please top up to keep using the tutor.');
     throw new Error(`Lovable AI HTTP ${res.status}: ${text.slice(0, 200)}`);
   }
   const data = await res.json();
+  const u = data?.usage ?? {};
+  await logAIUsage({ ...base, status: 'ok', promptTokens: u.prompt_tokens, completionTokens: u.completion_tokens, totalTokens: u.total_tokens });
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callGroq(messages: any[], temperature = 0.3): Promise<{ content: string; keyIndex: number }> {
-  const keys = getKeys();
-  if (keys.length === 0) throw new Error('No GROQ_API_KEY_* secrets configured');
-
-  let lastErr = '';
-  const startOffset = rotationCursor++ % keys.length;
-  for (const model of GROQ_MODELS) {
-    for (let attempt = 0; attempt < keys.length; attempt++) {
-      const idx = (startOffset + attempt) % keys.length;
-      const key = keys[idx];
-      try {
-        const res = await fetch(GROQ_URL, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages, temperature, max_tokens: 4096 }),
-        });
-        if (res.status === 429 || res.status === 401 || res.status === 403) {
-          lastErr = `Key #${idx + 1} -> HTTP ${res.status}`;
-          continue;
-        }
-        if (!res.ok) {
-          const text = await res.text();
-          lastErr = `HTTP ${res.status}: ${text.slice(0, 200)}`;
-          continue;
-        }
-        const data = await res.json();
-        const content = data?.choices?.[0]?.message?.content ?? '';
-        return { content, keyIndex: idx + 1 };
-      } catch (e) {
-        lastErr = (e as Error).message;
-      }
-    }
+async function callAI(messages: any[], req: Request, temperature = 0.3): Promise<{ content: string; keyIndex: number; provider: string }> {
+  const userId = await getUserIdFromRequest(req);
+  const { ide_use_primary } = await getAISettings();
+  if (ide_use_primary) {
+    // Admin turned on "Also use for IDE chatbot" → route through the active primary key.
+    const r = await chatWithFeatureAI('ide-chatbot', { messages, temperature, userId });
+    return { content: r.content, keyIndex: 0, provider: r.provider };
   }
-  throw new Error(`All Groq keys failed: ${lastErr}`);
-}
-
-async function callAI(messages: any[], temperature = 0.3): Promise<{ content: string; keyIndex: number; provider: string }> {
-  try {
-    const content = await callLovable(messages, temperature);
-    if (content) return { content, keyIndex: 0, provider: 'lovable' };
-    throw new Error('Empty response from Lovable AI');
-  } catch (primaryErr) {
-    const msg = (primaryErr as Error).message || '';
-    try {
-      const groq = await callGroq(messages, temperature);
-      return { ...groq, provider: 'groq' };
-    } catch (fallbackErr) {
-      throw new Error(`${msg} | Fallback: ${(fallbackErr as Error).message}`);
-    }
-  }
+  const content = await callLovable(messages, temperature, userId);
+  if (!content) throw new Error('Empty response from AI tutor');
+  return { content, keyIndex: 0, provider: 'lovable' };
 }
 
 
@@ -185,7 +138,7 @@ serve(async (req) => {
     // 4. Current user message
     messages.push({ role: 'user', content: String(message ?? '') });
 
-    const { content, keyIndex, provider } = await callAI(messages);
+    const { content, keyIndex, provider } = await callAI(messages, req);
 
     return new Response(JSON.stringify({ response: content, keyUsed: keyIndex, provider }), {
 

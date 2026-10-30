@@ -1,3 +1,4 @@
+import { chatWithFeatureAI } from '../_shared/ai-pool.ts';
 // Generates problem metadata + test cases for a single problem and caches into problem_test_cases.
 // Used by the agent dashboard to backfill tests for problems that don't yet have them.
 
@@ -9,85 +10,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
-const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const LOVABLE_MODEL = 'google/gemini-3.8-flash';
 
-function getKeys(): string[] {
-  const keys: string[] = [];
-  for (let i = 1; i <= 5; i++) {
-    const k = Deno.env.get(`GROQ_API_KEY_${i}`);
-    if (k) keys.push(k);
-  }
-  return keys;
-}
-
-let rotationCursor = 0;
-async function callGroq(messages: any[]): Promise<string> {
-  const keys = getKeys();
-  if (keys.length === 0) throw new Error('No GROQ_API_KEY_* secrets configured');
-  let lastErr = '';
-  const startOffset = rotationCursor++ % keys.length;
-  for (let attempt = 0; attempt < keys.length; attempt++) {
-    const idx = (startOffset + attempt) % keys.length;
-    try {
-      const res = await fetch(GROQ_URL, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${keys[idx]}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: MODEL,
-          messages,
-          temperature: 0.2,
-          max_tokens: 2500,
-          response_format: { type: 'json_object' },
-        }),
-      });
-      if (res.status === 429 || res.status === 401 || res.status === 403) {
-        lastErr = `Key #${idx + 1} -> HTTP ${res.status}`;
-        continue;
-      }
-      if (!res.ok) { lastErr = `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`; continue; }
-      const data = await res.json();
-      return data?.choices?.[0]?.message?.content ?? '';
-    } catch (e) { lastErr = (e as Error).message; }
-  }
-  throw new Error(`Groq failed: ${lastErr}`);
-}
-
-async function callLovable(messages: any[]): Promise<string> {
-  const key = Deno.env.get('LOVABLE_API_KEY');
-  if (!key) throw new Error('LOVABLE_API_KEY not configured');
-
-  const res = await fetch(LOVABLE_URL, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: LOVABLE_MODEL, messages, temperature: 0.2, max_tokens: 4096 }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    if (res.status === 429) throw new Error('RATE_LIMIT: Too many requests, please wait a moment and try again.');
-    if (res.status === 402) throw new Error('CREDITS: AI credits exhausted. Please top up to keep using the AI features.');
-    throw new Error(`Lovable AI HTTP ${res.status}: ${text.slice(0, 200)}`);
-  }
-  const data = await res.json();
-  return data?.choices?.[0]?.message?.content ?? '';
-}
-
-async function callAI(messages: any[]): Promise<string> {
-  try {
-    const content = await callLovable(messages);
-    if (content) return content;
-    throw new Error('Empty response from Lovable AI');
-  } catch (primaryErr) {
-    const msg = (primaryErr as Error).message || '';
-    try {
-      return await callGroq(messages);
-    } catch (fallbackErr) {
-      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
-    }
-  }
+async function callAI(messages: any[], req?: Request): Promise<string> {
+  const r = await chatWithFeatureAI('agent-generate-tests', { messages, req });
+  return r.content;
 }
 
 const SYSTEM = `You generate test metadata for a Java DSA coding problem. Output ONLY a single JSON object with this exact shape:
@@ -148,7 +74,7 @@ Deno.serve(async (req) => {
     const raw = await callAI([
       { role: 'system', content: SYSTEM },
       { role: 'user', content: userMsg },
-    ]);
+    ], req);
 
     let parsed: any;
     try { parsed = JSON.parse(raw); }
