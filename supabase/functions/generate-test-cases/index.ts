@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiGatewayFetch } from "../_shared/ai-compat.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -17,17 +18,8 @@ serve(async (req) => {
 
   try {
     const { code, title, difficulty, problem_key, problemDescription } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    const response = await aiGatewayFetch("test-case-generation", req, {
         messages: [
           {
             role: "system",
@@ -106,8 +98,7 @@ ${code}`
           }
         ],
         tool_choice: { type: "function", function: { name: "return_test_cases" } }
-      }),
-    });
+      });
 
     if (!response.ok) {
       if (response.status === 429) {

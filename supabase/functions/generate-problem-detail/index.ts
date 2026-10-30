@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiGatewayFetch } from "../_shared/ai-compat.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -8,22 +9,13 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-async function callAI(title: string, difficulty: string, topic: string) {
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+async function callAI(req: Request, title: string, difficulty: string, topic: string) {
+  const response = await aiGatewayFetch("problem-detail", req, {
       messages: [
         {
           role: "system",
@@ -121,8 +113,7 @@ Match the REAL LeetCode problem if it exists. Include description, constraints, 
         },
       }],
       tool_choice: { type: "function", function: { name: "return_problem_detail" } },
-    }),
-  });
+    });
 
   if (!response.ok) {
     const status = response.status;
@@ -216,9 +207,9 @@ serve(async (req) => {
     }
 
     // 2) Generate, with one retry if test cases come back empty
-    let detail = sanitizeDetail(await callAI(title, difficulty, topic));
+    let detail = sanitizeDetail(await callAI(req, title, difficulty, topic));
     if (detail.testCases.length === 0) {
-      detail = sanitizeDetail(await callAI(title, difficulty, topic));
+      detail = sanitizeDetail(await callAI(req, title, difficulty, topic));
     }
 
     // 3) Write to shared cache (best-effort) using service role
