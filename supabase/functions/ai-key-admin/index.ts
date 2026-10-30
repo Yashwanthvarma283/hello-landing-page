@@ -111,7 +111,6 @@ Deno.serve(async (req) => {
     switch (action) {
       // ── LIST ──────────────────────────────────────────────────────────────
       case 'list': {
-        const { data: features } = await supabase.from('ai_feature_config').select('*').then((r: any) => r, () => ({ data: [] }));
         const { data, error } = await supabase
           .from('ai_api_keys')
           .select('*')
@@ -122,7 +121,7 @@ Deno.serve(async (req) => {
           api_key: mask(k.api_key),
           has_key: !!k.api_key,
         }));
-        return json({ keys, features: features ?? [] });
+        return json({ keys });
       }
 
       // ── ADD KEY ───────────────────────────────────────────────────────────
