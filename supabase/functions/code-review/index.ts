@@ -13,6 +13,7 @@ serve(async (req) => {
     const { code } = await req.json();
 
     const { content } = await chatWithFeatureAI("code-review", {
+      req,
       messages: [
         {
           role: "system",

@@ -54,6 +54,7 @@ serve(async (req) => {
     const difficulty = difficulties[Math.floor(Math.random() * 2)]; // bias toward easy/medium
 
     const result = await chatWithFeatureAI("problem-generation", {
+      req,
       messages: [
         { role: "system", content: "Generate a unique Java DSA practice problem. Return structured data." },
         { role: "user", content: `Generate a ${difficulty} Java DSA problem about "${weakestTopic}". Make it unique and educational.` },

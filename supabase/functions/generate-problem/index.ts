@@ -13,6 +13,7 @@ serve(async (req) => {
     const { difficulty, topic } = await req.json();
 
     const result = await chatWithFeatureAI("problem-generation", {
+      req,
       messages: [
         { role: "system", content: "You are a coding problem generator. Generate unique, well-structured Java DSA problems." },
         { role: "user", content: `Generate a ${difficulty} difficulty Java DSA problem about "${topic}". Include a clear title, description, examples with input/output, constraints, and starter code with only the function signature.` },
