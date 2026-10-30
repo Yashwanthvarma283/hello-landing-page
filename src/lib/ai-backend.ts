@@ -244,37 +244,6 @@ export async function callPrimaryAI(
   systemPrompt = "You are an expert Java competitive programming and DSA assistant.",
   temperature = 0.2,
 ): Promise<string> {
-  // 1. Direct primary key execution if available locally
-  const cfg = getPrimaryAIConfig();
-  if (cfg?.apiKey) {
-    try {
-      const baseUrl = (cfg.baseUrl || 'https://api.groq.com/openai/v1').replace(/\/$/, '');
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${cfg.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: cfg.model || 'llama-3.1-8b-instant',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: prompt },
-          ],
-          temperature,
-          max_tokens: 3500,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data?.choices?.[0]?.message?.content;
-        if (reply) return reply;
-      }
-    } catch (err) {
-      console.warn('Direct primary AI call failed, falling back to edge function...', err);
-    }
-  }
-
   // 2. Supabase edge function fallback
   try {
     const { data, error } = await supabase.functions.invoke('code-review', {
@@ -433,27 +402,7 @@ export async function chat(
   problemDescription?: string,
   context?: ChatContext,
 ): Promise<string> {
-  const mode = getIDEChatbotMode();
-  const customConfig = getIDEChatbotConfig();
-
-  // 1. If custom chatbot mode is active and configured, use the custom API key
-  if (mode === 'custom' && customConfig?.apiKey) {
-    try {
-      return await callCustomProviderChat(
-        customConfig,
-        code,
-        userMessage,
-        problemId,
-        history,
-        problemDescription,
-        context,
-      );
-    } catch (customErr: any) {
-      console.warn('Custom provider chat failed, falling back to default Gemini setup...', customErr);
-      // Fall through to default setup below
-    }
-  }
-
+  // The server decides (admin setting) whether the IDE chatbot uses Gemini or the primary key.
   // 2. Default IDE chatbot setup: runs existing Gemini setup via agent-chat (undisturbed)
   try {
     const { data, error } = await supabase.functions.invoke('agent-chat', {
