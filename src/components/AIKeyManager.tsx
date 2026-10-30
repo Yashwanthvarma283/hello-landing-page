@@ -42,6 +42,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { findPrimaryKey } from "@/lib/primary-key";
 
 // Derive the project URL from the initialized supabase client
 const SUPABASE_URL =
@@ -717,7 +718,7 @@ const AIKeyManager = () => {
   const handleRestoreDefaultChatbot = () => setIdeOverride(false);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const primaryKey = keys.find((k) => k.is_primary);
+  const primaryKey = findPrimaryKey(keys);
   const nonPrimaryKeys = keys.filter((k) => k.id !== primaryKey?.id);
 
   // ── Render ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { primaryModel, usePrimaryForChat } from '../../supabase/functions/_shared/ai-routing';
+import { findPrimaryKey } from '../lib/primary-key';
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { functions: { invoke } } }));
@@ -13,6 +14,10 @@ beforeEach(() => {
 });
 
 describe('Admin primary AI routing', () => {
+  it('does not label an unselected first key as primary', () => {
+    expect(findPrimaryKey([{ id: 'groq', is_primary: false }])).toBeUndefined();
+    expect(findPrimaryKey([{ id: 'first', is_primary: false }, { id: 'selected', is_primary: true }])?.id).toBe('selected');
+  });
   it('keeps the default provider available only to the home main IDE', () => {
     expect(usePrimaryForChat('/', 'main-ide-chatbot', false)).toBe(false);
     expect(usePrimaryForChat('/', 'feature', false)).toBe(true);
