@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { parseStarterSignature, examplesToTestCases } from '@/lib/leetcode-parse';
 import { useUser } from '@/lib/user-context';
 import { createProblem } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -83,7 +84,11 @@ const ProblemGenerator = () => {
       const { data, error } = await supabase.functions.invoke('generate-problem', {
         body: { difficulty, topic },
       });
-      if (error) throw error;
+      if (error) {
+        let msg = error.message;
+        try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* keep default */ }
+        throw new Error(msg);
+      }
       if (data?.problem) setProblem(data.problem);
       else throw new Error('No problem generated');
     } catch (err: any) {
@@ -113,7 +118,10 @@ const ProblemGenerator = () => {
 
       if (saveError) throw saveError;
       
-      // 2. Prepare test cases and details
+      // 2. Prepare test cases keyed by the real method parameters
+      const sig = parseStarterSignature(code);
+      const paramNames = sig?.params.map(p => p.name) ?? [];
+      const testCases = examplesToTestCases(problem.examples || [], paramNames);
       const { error: detailError } = await supabase
         .from('problem_test_cases')
         .insert({
@@ -121,13 +129,10 @@ const ProblemGenerator = () => {
           description: problem.description,
           examples: problem.examples,
           starter_code: code,
-          test_cases: problem.examples.map(ex => ({
-            inputs: { input: ex.input },
-            expected: ex.output
-          })),
-          function_name: 'solve',
-          return_type: 'void',
-          params: [{ name: 'input', type: 'String' }],
+          test_cases: testCases,
+          function_name: sig?.functionName || 'solve',
+          return_type: sig?.returnType || 'void',
+          params: sig?.params || [],
           constraints: problem.constraints,
           difficulty: problem.difficulty,
           topic: problem.topic
