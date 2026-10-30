@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_type: string | null
+          final_code: string
+          finished_at: string | null
+          id: string
+          key_usage: Json
+          logs: Json
+          passed_count: number
+          phase: string
+          problem_key: string
+          started_at: string
+          title: string
+          total_count: number
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_type?: string | null
+          final_code?: string
+          finished_at?: string | null
+          id?: string
+          key_usage?: Json
+          logs?: Json
+          passed_count?: number
+          phase: string
+          problem_key: string
+          started_at?: string
+          title: string
+          total_count?: number
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_type?: string | null
+          final_code?: string
+          finished_at?: string | null
+          id?: string
+          key_usage?: Json
+          logs?: Json
+          passed_count?: number
+          phase?: string
+          problem_key?: string
+          started_at?: string
+          title?: string
+          total_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_api_keys: {
         Row: {
           api_key: string
@@ -208,6 +262,65 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          receiver_id: string | null
+          sender_id: string | null
+          subject: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string | null
+          sender_id?: string | null
+          subject?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string | null
+          sender_id?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "direct_messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "direct_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       discussion_posts: {
         Row: {
           content: string
@@ -356,6 +469,77 @@ export type Database = {
         }
         Relationships: []
       }
+      issue_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          issue_id: string | null
+          message: string
+          sender_id: string | null
+          sender_role: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          message: string
+          sender_id?: string | null
+          sender_role: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          message?: string
+          sender_id?: string | null
+          sender_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_messages_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      issues: {
+        Row: {
+          admin_reply: string | null
+          comment: string
+          created_at: string | null
+          id: string
+          page_title: string | null
+          page_url: string
+          status: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_reply?: string | null
+          comment: string
+          created_at?: string | null
+          id?: string
+          page_title?: string | null
+          page_url: string
+          status?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_reply?: string | null
+          comment?: string
+          created_at?: string | null
+          id?: string
+          page_title?: string | null
+          page_url?: string
+          status?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       learning_history: {
         Row: {
           algorithm: string
@@ -498,6 +682,7 @@ export type Database = {
         Row: {
           ban_until: string | null
           created_at: string
+          display_id: number
           id: string
           status: string
           username: string
@@ -505,6 +690,7 @@ export type Database = {
         Insert: {
           ban_until?: string | null
           created_at?: string
+          display_id?: number
           id: string
           status?: string
           username: string
@@ -512,6 +698,7 @@ export type Database = {
         Update: {
           ban_until?: string | null
           created_at?: string
+          display_id?: number
           id?: string
           status?: string
           username?: string
@@ -594,6 +781,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_patch_proposals: {
+        Row: {
+          context_snippet: string | null
+          created_at: string
+          diff: string
+          error_summary: string
+          error_type: string
+          explanation: string
+          id: string
+          problem_key: string | null
+          proposed_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_files: string[]
+        }
+        Insert: {
+          context_snippet?: string | null
+          created_at?: string
+          diff: string
+          error_summary: string
+          error_type: string
+          explanation: string
+          id?: string
+          problem_key?: string | null
+          proposed_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_files?: string[]
+        }
+        Update: {
+          context_snippet?: string | null
+          created_at?: string
+          diff?: string
+          error_summary?: string
+          error_type?: string
+          explanation?: string
+          id?: string
+          problem_key?: string | null
+          proposed_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_files?: string[]
+        }
+        Relationships: []
       }
       test_cases: {
         Row: {
@@ -779,9 +1014,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profile_stats: {
+        Row: {
+          attempted_count: number | null
+          created_at: string | null
+          display_id: number | null
+          last_active: string | null
+          solved_count: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_delete_user: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      admin_reset_password: {
+        Args: { new_password: string; target_user_id: string }
+        Returns: undefined
+      }
+      admin_reset_username: {
+        Args: { new_username: string; target_user_id: string }
+        Returns: undefined
+      }
       ai_pool_track_key_usage: {
         Args: { p_key_id: string; p_patch: Json }
         Returns: undefined
