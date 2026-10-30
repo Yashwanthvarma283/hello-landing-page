@@ -66,6 +66,19 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  // Fallback for published builds where .env is not present (it is gitignored).
+  // These are publishable (public) values only.
+  define: {
+    "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
+      process.env.VITE_SUPABASE_URL || "https://guahfuqzmtschfserlms.supabase.co",
+    ),
+    "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable__-GgmQX7kuWK2UD2AvI7Xg_GUWJzSPO",
+    ),
+    "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(
+      process.env.VITE_SUPABASE_PROJECT_ID || "guahfuqzmtschfserlms",
+    ),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
