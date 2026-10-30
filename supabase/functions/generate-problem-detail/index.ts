@@ -54,7 +54,7 @@ PROBLEM REQUIREMENTS:
         {
           role: "user",
           content: `Generate a complete LeetCode-style problem for: "${title}" (Difficulty: ${difficulty}, Topic: ${topic || "General"}).
-Match the REAL LeetCode problem if it exists. Include description, constraints, examples with explanations, starter code, and 3-5 high-quality test cases (every one MUST have inputs and an exact expected output).`,
+Match the REAL LeetCode problem if it exists. Every example and test case MUST be about THIS exact problem ("${title}") — never a different problem. The keys of each test case "inputs" object MUST be exactly the parameter names of the method in starterCode, and examples must use the LeetCode format "nums = [2,7,11,15], target = 9". The description must read like LeetCode: a clear statement, then rely on the separate examples/constraints fields (do not repeat them inside the description). Include description, constraints, examples with explanations, starter code, and 3-5 high-quality test cases (every one MUST have inputs and an exact expected output).`,
         },
       ],
       tools: [{
@@ -131,7 +131,37 @@ Match the REAL LeetCode problem if it exists. Include description, constraints, 
   return JSON.parse(toolCall.function.arguments);
 }
 
+function paramsFromStarter(code: string): { name: string; type: string }[] {
+  const m = String(code || '').match(/(?:public|private|protected|static|\s)+[\w<>\[\],\s]+?\s+\w+\s*\(([^)]*)\)\s*\{/);
+  if (!m || !m[1].trim()) return [];
+  return m[1].split(/,(?![^<]*>)/).map((p) => p.trim().split(/\s+/)).filter((a) => a.length >= 2)
+    .map((a) => ({ name: a[a.length - 1], type: a.slice(0, -1).join(' ') }));
+}
+
+/** Keep only test cases whose input keys are exactly the method parameters (fixes irrelevant/broken cases). */
+function alignToParams(cases: any[], paramNames: string[]): any[] {
+  if (!paramNames.length) return cases;
+  return cases.map((tc) => {
+    const src = tc.inputs || {};
+    const lower: Record<string, any> = {};
+    for (const [k, v] of Object.entries(src)) lower[k.toLowerCase()] = v;
+    const vals = Object.values(src);
+    const inputs: Record<string, string> = {};
+    paramNames.forEach((name, i) => {
+      const v = src[name] ?? lower[name.toLowerCase()] ?? (vals.length === paramNames.length ? vals[i] : undefined);
+      if (v !== undefined && v !== null && String(v).trim() !== '') {
+        inputs[name] = typeof v === 'string' ? v : JSON.stringify(v);
+      }
+    });
+    return Object.keys(inputs).length === paramNames.length ? { ...tc, inputs } : null;
+  }).filter(Boolean);
+}
+
 function sanitizeDetail(detail: any) {
+  detail = detail && typeof detail === 'object' ? detail : {};
+  const starterParams = paramsFromStarter(detail.starterCode);
+  if (starterParams.length) detail.params = starterParams;
+  const paramNamesAll: string[] = Array.isArray(detail.params) ? detail.params.map((p: any) => p?.name).filter(Boolean) : [];
   // Strict validation: drop test cases with missing inputs/expected
   if (Array.isArray(detail.testCases)) {
     detail.testCases = detail.testCases.filter((tc: any) => {
@@ -144,13 +174,14 @@ function sanitizeDetail(detail: any) {
       const hasExpected = expectedField !== undefined && String(expectedField).trim() !== "";
       if (hasExpected && tc.expected === undefined) tc.expected = String(expectedField);
       return hasInputs && hasExpected;
-    }).slice(0, 5);
+    }).map((tc: any) => ({ ...tc, expected: String(tc.expected).trim() }));
+    detail.testCases = alignToParams(detail.testCases, paramNamesAll).slice(0, 5);
   } else {
     detail.testCases = [];
   }
 
   // Fallback: derive test cases from examples
-  if (detail.testCases.length === 0 && Array.isArray(detail.examples) && Array.isArray(detail.params)) {
+  if (detail.testCases.length < 3 && Array.isArray(detail.examples) && Array.isArray(detail.params)) {
     const paramNames: string[] = detail.params.map((p: any) => p?.name).filter(Boolean);
     const derived = detail.examples.map((ex: any) => {
       const raw = String(ex?.input ?? "");
@@ -169,7 +200,11 @@ function sanitizeDetail(detail: any) {
       }
       return { inputs, expected: String(ex?.output ?? "").trim(), category: "normal" };
     }).filter((tc: any) => Object.keys(tc.inputs).length > 0 && tc.expected);
-    detail.testCases = derived.slice(0, 5);
+    const seen = new Set(detail.testCases.map((tc: any) => JSON.stringify(tc.inputs)));
+    for (const d of alignToParams(derived, paramNames)) {
+      if (!seen.has(JSON.stringify(d.inputs))) { detail.testCases.unshift(d); seen.add(JSON.stringify(d.inputs)); }
+    }
+    detail.testCases = detail.testCases.slice(0, 5);
   }
 
   return detail;
