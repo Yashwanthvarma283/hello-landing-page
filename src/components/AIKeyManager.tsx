@@ -134,19 +134,29 @@ async function callAdmin(body: Record<string, unknown>) {
   const token = session?.access_token;
   if (!token) throw new Error("Not authenticated");
 
-  const res = await fetch(
-    `${SUPABASE_URL}/functions/v1/ai-key-admin`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }
-  );
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/ai-key-admin`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  }).catch(() => {
+    throw new Error("Could not reach the ai-key-admin function. Make sure it is deployed to your Supabase project.");
+  });
+  const text = await res.text();
+  let json: any = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      res.status === 404
+        ? "ai-key-admin function is not deployed (404). Deploy it in Supabase."
+        : `Server returned an invalid response (HTTP ${res.status}): ${text.slice(0, 160)}`,
+    );
+  }
+  if (!res.ok) throw new Error(json.error ?? json.message ?? `HTTP ${res.status}`);
   return json;
 }
 
