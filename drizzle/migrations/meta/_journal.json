@@ -64,6 +64,13 @@
       "when": 1793379414421,
       "tag": "0008_daily_questions_coins_202606",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793379452572,
+      "tag": "0009_store_effects_20260609",
+      "breakpoints": true
     }
   ]
 }

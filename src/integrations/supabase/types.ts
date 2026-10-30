@@ -1607,7 +1607,21 @@ export type Database = {
         Args: { _claim_key?: string; _rule_key: string; _user_id: string }
         Returns: number
       }
+      consume_extra_hint: { Args: never; Returns: boolean }
+      equip_item: { Args: { _item_slug: string }; Returns: Json }
+      get_active_effects: {
+        Args: { _user_id: string }
+        Returns: {
+          category: string
+          equipped: boolean
+          expires_at: string
+          item_slug: string
+          meta: Json
+          name: string
+        }[]
+      }
       get_user_status: { Args: { _user_id: string }; Returns: string }
+      has_active_streak_freeze: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1616,6 +1630,7 @@ export type Database = {
         Returns: boolean
       }
       purchase_item: { Args: { _item_slug: string }; Returns: Json }
+      unequip_item: { Args: { _item_slug: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator"
