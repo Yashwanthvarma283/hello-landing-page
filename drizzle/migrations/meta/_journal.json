@@ -50,6 +50,13 @@
       "when": 1793379356154,
       "tag": "0006_lobbies_realtime_xp_202605b1",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793379374026,
+      "tag": "0007_moderator_policies_202605b2",
+      "breakpoints": true
     }
   ]
 }

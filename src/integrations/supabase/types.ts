@@ -1234,6 +1234,13 @@ export type Database = {
         Args: { new_username: string; target_user_id: string }
         Returns: undefined
       }
+      admin_update_user_role: {
+        Args: {
+          new_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: undefined
+      }
       ai_pool_track_key_usage: {
         Args: { p_key_id: string; p_patch: Json }
         Returns: undefined
