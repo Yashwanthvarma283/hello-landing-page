@@ -132,7 +132,8 @@ Match the REAL LeetCode problem if it exists. Every example and test case MUST b
 }
 
 function paramsFromStarter(code: string): { name: string; type: string }[] {
-  const m = String(code || '').match(/(?:public|private|protected|static|\s)+[\w<>\[\],\s]+?\s+\w+\s*\(([^)]*)\)\s*\{/);
+  const clean = String(code || '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  const m = clean.match(/(?:public|private|protected|static|\s)+[\w<>\[\],\s]+?\s+\w+\s*\(([^)]*)\)\s*\{/);
   if (!m || !m[1].trim()) return [];
   return m[1].split(/,(?![^<]*>)/).map((p) => p.trim().split(/\s+/)).filter((a) => a.length >= 2)
     .map((a) => ({ name: a[a.length - 1], type: a.slice(0, -1).join(' ') }));
