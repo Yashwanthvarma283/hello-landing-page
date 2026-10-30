@@ -69,6 +69,9 @@ export default defineConfig(({ mode }) => ({
   // Fallback for published builds where .env is not present (it is gitignored).
   // These are publishable (public) values only.
   define: {
+    "import.meta.env.VITE_API_URL": JSON.stringify(
+      process.env.VITE_API_URL || "https://compiler-backend-perc.onrender.com",
+    ),
     "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(
       process.env.VITE_SUPABASE_URL || "https://guahfuqzmtschfserlms.supabase.co",
     ),
