@@ -1,3 +1,4 @@
+import { chatWithFeatureAI } from '../_shared/ai-pool.ts';
 // Groq agent edge function with API key rotation.
 // Two modes: 'generate' (write Java solution) and 'fix' (repair Java code given an error).
 // Rotates through GROQ_API_KEY_1..5; on 429/401 falls back to next key.
@@ -87,20 +88,9 @@ async function callLovable(messages: any[], temperature = 0.2): Promise<string> 
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callAI(messages: any[], temperature = 0.2): Promise<{ content: string; keyIndex: number; provider: string }> {
-  try {
-    const content = await callLovable(messages, temperature);
-    if (content) return { content, keyIndex: 0, provider: 'lovable' };
-    throw new Error('Empty response from Lovable AI');
-  } catch (primaryErr) {
-    const msg = (primaryErr as Error).message || '';
-    try {
-      const groq = await callGroq(messages, temperature);
-      return { ...groq, provider: 'groq' };
-    } catch (fallbackErr) {
-      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
-    }
-  }
+async function callAI(messages: any[], temperature = 0.2, req?: Request): Promise<{ content: string; keyIndex: number; provider: string }> {
+  const r = await chatWithFeatureAI('agent-solver', { messages, temperature, req });
+  return { content: r.content, keyIndex: 0, provider: r.provider };
 }
 
 function stripCodeFence(text: string): string {
@@ -222,7 +212,7 @@ ${failBlock}Return only the complete corrected Solution class.`;
       });
     }
 
-    const { content, keyIndex, provider } = await callAI(messages, body.mode === 'fix' ? 0.1 : 0.2);
+    const { content, keyIndex, provider } = await callAI(messages, body.mode === 'fix' ? 0.1 : 0.2, req);
     const code = stripCodeFence(content);
     return new Response(JSON.stringify({ code, keyUsed: keyIndex, provider }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

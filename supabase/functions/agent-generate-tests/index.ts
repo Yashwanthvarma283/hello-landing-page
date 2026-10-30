@@ -1,3 +1,4 @@
+import { chatWithFeatureAI } from '../_shared/ai-pool.ts';
 // Generates problem metadata + test cases for a single problem and caches into problem_test_cases.
 // Used by the agent dashboard to backfill tests for problems that don't yet have them.
 
@@ -75,19 +76,9 @@ async function callLovable(messages: any[]): Promise<string> {
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callAI(messages: any[]): Promise<string> {
-  try {
-    const content = await callLovable(messages);
-    if (content) return content;
-    throw new Error('Empty response from Lovable AI');
-  } catch (primaryErr) {
-    const msg = (primaryErr as Error).message || '';
-    try {
-      return await callGroq(messages);
-    } catch (fallbackErr) {
-      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
-    }
-  }
+async function callAI(messages: any[], req?: Request): Promise<string> {
+  const r = await chatWithFeatureAI('agent-generate-tests', { messages, req });
+  return r.content;
 }
 
 const SYSTEM = `You generate test metadata for a Java DSA coding problem. Output ONLY a single JSON object with this exact shape:
@@ -148,7 +139,7 @@ Deno.serve(async (req) => {
     const raw = await callAI([
       { role: 'system', content: SYSTEM },
       { role: 'user', content: userMsg },
-    ]);
+    ], req);
 
     let parsed: any;
     try { parsed = JSON.parse(raw); }

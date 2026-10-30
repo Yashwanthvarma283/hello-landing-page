@@ -1,3 +1,4 @@
+import { chatWithFeatureAI } from '../_shared/ai-pool.ts';
 // Drafts a system-level patch *proposal* when the agent classifies an error as SYSTEM.
 // CRITICAL: this function NEVER applies a patch. It writes a proposal row to
 // `system_patch_proposals` for human admin review.
@@ -76,19 +77,9 @@ async function callLovable(messages: any[]): Promise<string> {
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callAI(messages: any[]): Promise<{ content: string; keyIndex: number }> {
-  try {
-    const content = await callLovable(messages);
-    if (content) return { content, keyIndex: 0 };
-    throw new Error('Empty response from Lovable AI');
-  } catch (primaryErr) {
-    const msg = (primaryErr as Error).message || '';
-    try {
-      return await callGroq(messages);
-    } catch (fallbackErr) {
-      throw new Error(`${msg} (Groq fallback also failed: ${(fallbackErr as Error).message})`);
-    }
-  }
+async function callAI(messages: any[], req?: Request): Promise<{ content: string; keyIndex: number }> {
+  const r = await chatWithFeatureAI('agent-system-patch', { messages, req });
+  return { content: r.content, keyIndex: 0 };
 }
 
 const SYSTEM_PROMPT = `You are a senior TypeScript / Deno engineer auditing an autonomous test agent for a Java DSA platform.
@@ -184,7 +175,7 @@ Return the JSON object now.`;
       const { content, keyIndex: ki } = await callAI([
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMsg },
-      ]);
+      ], req);
       keyIndex = ki;
       parsed = extractJson(content);
     } catch (e) {
