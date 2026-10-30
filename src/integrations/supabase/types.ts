@@ -14,13 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_api_keys: {
+        Row: {
+          api_key: string
+          base_url: string
+          created_at: string
+          enabled: boolean
+          error_count: number
+          id: string
+          label: string
+          last_error: string | null
+          last_used_at: string | null
+          model: string
+          provider: string
+          status: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          enabled?: boolean
+          error_count?: number
+          id?: string
+          label: string
+          last_error?: string | null
+          last_used_at?: string | null
+          model?: string
+          provider?: string
+          status?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          enabled?: boolean
+          error_count?: number
+          id?: string
+          label?: string
+          last_error?: string | null
+          last_used_at?: string | null
+          model?: string
+          provider?: string
+          status?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
+      ai_feature_config: {
+        Row: {
+          enabled: boolean
+          feature_key: string
+          key_ids: Json
+          model: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          feature_key: string
+          key_ids?: Json
+          model?: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          feature_key?: string
+          key_ids?: Json
+          model?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ai_pool_track_key_usage: {
+        Args: { p_key_id: string; p_patch: Json }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
