@@ -9,6 +9,7 @@
 // The raw api_key is never returned to the client — only masked strings.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { primaryModel } from './ai-routing.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -58,25 +59,19 @@ export interface StreamResult {
   model: string;
 }
 
-// ── Cache (30 s per isolate) ──────────────────────────────────────────────────
-let primaryCache: { key: PoolKey | null; at: number } | null = null;
-const CACHE_MS = 30_000;
-
 function adminClient() {
   return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 }
 
-async function loadPrimary(force = false): Promise<PoolKey | null> {
-  if (!force && primaryCache && Date.now() - primaryCache.at < CACHE_MS) {
-    return primaryCache.key;
-  }
+async function loadPrimary(): Promise<PoolKey | null> {
   const supabase = adminClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('ai_api_keys')
     .select('*')
     .eq('is_primary', true)
     .eq('enabled', true)
     .maybeSingle();
+  if (error) throw new Error('Unable to load the admin primary AI key. Please try again.');
 
   const key: PoolKey | null = data
     ? {
@@ -89,12 +84,11 @@ async function loadPrimary(force = false): Promise<PoolKey | null> {
       }
     : null;
 
-  primaryCache = { key, at: Date.now() };
   return key;
 }
 
 export function invalidatePoolCache() {
-  primaryCache = null;
+  // Primary selection is read fresh for every request, across all functions.
 }
 
 async function track(keyId: string, patch: Record<string, unknown>) {
@@ -106,12 +100,8 @@ async function track(keyId: string, patch: Record<string, unknown>) {
   }
 }
 
-function resolveModel(key: PoolKey, override?: string): string {
-  if (override) return override;
-  if (key.model) return key.model;
-  throw new Error(
-    `No model configured for primary key "${key.label}". Set a default model in the Admin Dashboard → AI API Keys.`,
-  );
+function resolveModel(key: PoolKey): string {
+  return primaryModel(key.model, key.label);
 }
 
 async function callKey(key: PoolKey, model: string, opts: ChatOptions): Promise<Response> {
@@ -245,7 +235,7 @@ export async function chatWithPrimaryAI(opts: ChatOptions): Promise<AIResult> {
     await logAIUsage({ userId, feature, provider: '', model: '', status: 'error', error: 'No primary key' });
     throw new Error(NO_PRIMARY);
   }
-  const model = resolveModel(key, opts.model);
+  const model = resolveModel(key);
   const started = Date.now();
   const base = { userId, feature, provider: key.provider, model, keyId: key.id, keyLabel: key.label };
 
@@ -294,7 +284,7 @@ export async function streamWithPrimaryAI(opts: ChatOptions): Promise<StreamResu
     await logAIUsage({ userId, feature, provider: '', model: '', status: 'error', error: 'No primary key' });
     throw new Error(NO_PRIMARY);
   }
-  const model = resolveModel(key, opts.model);
+  const model = resolveModel(key);
   const started = Date.now();
   const base = { userId, feature, provider: key.provider, model, keyId: key.id, keyLabel: key.label };
 
@@ -306,10 +296,12 @@ export async function streamWithPrimaryAI(opts: ChatOptions): Promise<StreamResu
     await logAIUsage({ ...base, status: 'error', latencyMs: Date.now() - started, error: String(e?.message ?? e) });
     throw new Error(`AI stream request failed: ${String(e?.message ?? e)}`);
   }
-  if (!res.ok || !res.body) await failForStatus(key, res, { ...base, latencyMs: Date.now() - started });
+  if (!res.ok) await failForStatus(key, res, { ...base, latencyMs: Date.now() - started });
+  const body = res.body;
+  if (!body) throw new Error('AI returned an empty stream. Please try again.');
 
   track(key.id, { p_ok: true });
-  const [clientStream, meterStream] = res.body!.tee();
+  const [clientStream, meterStream] = body.tee();
   const headers = res.headers;
   (async () => {
     const reader = meterStream.getReader();

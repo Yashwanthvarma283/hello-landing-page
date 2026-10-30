@@ -42,6 +42,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { findPrimaryKey } from "@/lib/primary-key";
 
 // Derive the project URL from the initialized supabase client
 const SUPABASE_URL =
@@ -360,22 +361,10 @@ const AIKeyManager = () => {
     try {
       const res = await callAdmin({ action: "list" });
       const rawKeys: AIKey[] = res.keys ?? [];
-      const features: any[] = res.features ?? [];
-      const savedPrimaryId = localStorage.getItem("primary_ai_key_id");
-
-      // Check which key is configured as primary
-      const primaryFeature = features.find((f: any) => f.feature_key === "primary");
-      const primaryKeyId = primaryFeature?.key_ids?.[0] || savedPrimaryId;
-
       const mappedKeys = rawKeys.map((k) => ({
         ...k,
-        is_primary: Boolean(k.is_primary || (primaryKeyId && k.id === primaryKeyId)),
+        is_primary: Boolean(k.is_primary),
       }));
-
-      // If no key was primary but we have keys and savedPrimaryId, default to first or saved
-      if (!mappedKeys.some((k) => k.is_primary) && mappedKeys.length > 0) {
-        mappedKeys[0].is_primary = true;
-      }
 
       setKeys(mappedKeys);
     } catch (e: any) {
@@ -696,45 +685,9 @@ const AIKeyManager = () => {
     const rawKey = setPrimaryDialog.rawApiKey.trim() || localStorage.getItem(`ai_key_secret_${targetKey.id}`) || "";
 
     try {
-      // 1. Update key model & status in backend DB
-      try {
-        await callAdmin({
-          action: "update_key",
-          id: targetKey.id,
-          model: chosenModel,
-          enabled: true,
-          reset_status: true,
-          ...(rawKey ? { api_key: rawKey } : {}),
-        });
-      } catch (uErr) {
-        console.warn("Backend update_key:", uErr);
-      }
-
-      // 2. Set all feature configurations in ai_feature_config
-      for (const feat of ALL_AI_FEATURES) {
-        try {
-          await callAdmin({
-            action: "set_feature",
-            feature_key: feat,
-            key_ids: [targetKey.id],
-            model: chosenModel,
-            enabled: true,
-          });
-        } catch (featErr) {
-          console.warn(`Feature ${feat} config:`, featErr);
-        }
-      }
-
-      // 3. Try native set_primary (safely ignore if unsupported on older backend)
-      try {
-        await callAdmin({
-          action: "set_primary",
-          id: targetKey.id,
-          model: chosenModel,
-        });
-      } catch {
-        // Backend doesn't support set_primary action, feature configs already handled it
-      }
+      if (rawKey) await callAdmin({ action: "update_key", id: targetKey.id, api_key: rawKey });
+      const result = await callAdmin({ action: "set_primary", id: targetKey.id, model: chosenModel });
+      if (!result.key?.is_primary) throw new Error("The key was not activated. Please try again.");
 
       // IDE chatbot override is a global server-side setting
       if (alsoForChat) await setIdeOverride(true);
@@ -765,7 +718,7 @@ const AIKeyManager = () => {
   const handleRestoreDefaultChatbot = () => setIdeOverride(false);
 
   // ── Derived ────────────────────────────────────────────────────────────────
-  const primaryKey = keys.find((k) => k.is_primary) || keys[0];
+  const primaryKey = findPrimaryKey(keys);
   const nonPrimaryKeys = keys.filter((k) => k.id !== primaryKey?.id);
 
   // ── Render ─────────────────────────────────────────────────────────────────

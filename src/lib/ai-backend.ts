@@ -189,209 +189,29 @@ export interface ChatContext {
   module?: string;
 }
 
-export interface IDEChatbotConfig {
-  provider: string;
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-  label?: string;
-}
-
-export function getPrimaryAIConfig(): IDEChatbotConfig | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('primary_ai_config');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed?.apiKey) return parsed;
-    }
-    const primaryId = localStorage.getItem('primary_ai_key_id');
-    const primaryModel = localStorage.getItem('primary_ai_model') || 'llama-3.1-8b-instant';
-    if (primaryId) {
-      const cachedKey = localStorage.getItem(`ai_key_secret_${primaryId}`);
-      if (cachedKey) {
-        return {
-          provider: 'groq',
-          baseUrl: 'https://api.groq.com/openai/v1',
-          apiKey: cachedKey,
-          model: primaryModel,
-          label: 'Primary AI',
-        };
-      }
-    }
-    // Search any cached secrets
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith('ai_key_secret_')) {
-        const val = localStorage.getItem(k);
-        if (val && val.trim().startsWith('gsk_')) {
-          return {
-            provider: 'groq',
-            baseUrl: 'https://api.groq.com/openai/v1',
-            apiKey: val.trim(),
-            model: primaryModel,
-            label: 'Groq Key',
-          };
-        }
-      }
-    }
-  } catch {}
-  return getIDEChatbotConfig();
-}
-
 export async function callPrimaryAI(
   prompt: string,
   systemPrompt = "You are an expert Java competitive programming and DSA assistant.",
   temperature = 0.2,
 ): Promise<string> {
-  // 2. Supabase edge function fallback
-  try {
-    const { data, error } = await supabase.functions.invoke('code-review', {
-      body: { code: `// PROMPT: ${prompt}` },
-    });
-    if (!error && (data?.summary || data?.content)) {
-      return data.summary || data.content;
+  const { data, error } = await supabase.functions.invoke('agent-chat', {
+    body: { message: prompt, systemPrompt, temperature, purpose: 'feature', pagePath: currentPagePath() },
+  });
+  if (error) {
+    let message = error.message;
+    if (error.context instanceof Response) {
+      const details = await error.context.json().catch(() => null);
+      message = details?.error || message;
     }
-  } catch (edgeErr) {
-    console.warn('Edge function fallback failed, trying agent-chat...', edgeErr);
+    throw new Error(message || 'Primary AI request failed.');
   }
-
-  // 3. Fallback to agent-chat (Gemini setup)
-  try {
-    const { data } = await supabase.functions.invoke('agent-chat', {
-      body: { message: prompt },
-    });
-    if (data?.response || data?.reply) return data.response || data.reply;
-  } catch {}
-
-  return '';
+  if (data?.error) throw new Error(data.error);
+  if (!data?.response) throw new Error('Primary AI returned an empty response.');
+  return data.response;
 }
 
-export function getIDEChatbotMode(): 'default' | 'custom' {
-  if (typeof window === 'undefined') return 'default';
-  return (localStorage.getItem('ide_chatbot_mode') as 'custom' | 'default') || 'default';
-}
-
-export function getIDEChatbotConfig(): IDEChatbotConfig | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('ide_chatbot_config');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setIDEChatbotMode(mode: 'default' | 'custom', config?: IDEChatbotConfig) {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem('ide_chatbot_mode', mode);
-  if (mode === 'custom' && config) {
-    localStorage.setItem('ide_chatbot_config', JSON.stringify(config));
-  }
-  if (mode === 'default') {
-    localStorage.removeItem('ide_chatbot_config');
-  }
-}
-
-async function callCustomProviderChat(
-  config: IDEChatbotConfig,
-  code: string,
-  userMessage: string,
-  problemId?: string | null,
-  history: any[] = [],
-  problemDescription?: string,
-  context?: ChatContext,
-): Promise<string> {
-  const messages: any[] = [];
-
-  // 1. Base system prompt
-  messages.push({
-    role: 'system',
-    content: [
-      "You are JavaArena's in-app AI assistant. Behave like a normal, friendly chat assistant first.",
-      "Answer exactly what the user asked — nothing more. Match their length: a greeting or small talk gets",
-      "one or two short sentences with NO code, NO tutorial, NO unrequested example problem.",
-      "Never invent a problem to demonstrate, and never dump code unless the user asked for code",
-      "or the answer genuinely requires it.",
-      "You always silently know the user's CURRENT editor code and problem context (given below).",
-      "So when they say things like 'explain this code', 'fix this', 'why is this wrong', 'verify it',",
-      "'more test cases', or 'is my solution correct', use that context directly without asking them to paste anything.",
-      "If they ask about their code and the editor is empty, say so briefly.",
-      "You can also answer general questions (Java, DSA theory, careers, or anything else) like a normal chatbot.",
-      "When reviewing code, only flag genuine defects. Prefer modern Java (JDK 17+). Use markdown, with fenced ```java``` blocks only for actual code.",
-    ].join(' '),
-  });
-
-  // 2. Problem / workspace context
-  const ctxParts: string[] = [];
-  const mod = context?.module ?? inferModuleFromPath();
-  if (mod) ctxParts.push(`MODULE: ${mod}`);
-  if (problemId) ctxParts.push(`PROBLEM_ID: ${problemId}`);
-  if (context?.problemTitle) ctxParts.push(`PROBLEM_TITLE: ${context.problemTitle}`);
-  if (problemDescription) {
-    ctxParts.push(`PROBLEM_DESCRIPTION:\n${String(problemDescription).slice(0, 4000)}`);
-  }
-  if (Array.isArray(context?.problemExamples) && context.problemExamples.length > 0) {
-    ctxParts.push(`EXAMPLES:\n${JSON.stringify(context.problemExamples).slice(0, 1500)}`);
-  }
-  if (Array.isArray(context?.problemConstraints) && context.problemConstraints.length > 0) {
-    ctxParts.push(`CONSTRAINTS:\n${context.problemConstraints.join('\n').slice(0, 1000)}`);
-  }
-  if (code) {
-    ctxParts.push(`CURRENT_USER_CODE:\n\`\`\`java\n${String(code).slice(0, 6000)}\n\`\`\``);
-  }
-
-  if (ctxParts.length > 0) {
-    messages.push({
-      role: 'system',
-      content:
-        "==== CURRENT WORKSPACE CONTEXT ====\n" +
-        ctxParts.join('\n\n') +
-        "\n==== END CONTEXT ====\n" +
-        "Always treat references like 'this problem', 'my code', 'this code', 'the question' as pointing to the data above. " +
-        "Do NOT restate this context back to the user unless they ask about it.",
-    });
-  }
-
-  // 3. Recent history
-  if (Array.isArray(history)) {
-    messages.push(
-      ...history.slice(-10).map((m: any) => ({
-        role: m.role === 'system' ? 'system' : m.role === 'assistant' ? 'assistant' : 'user',
-        content: String(m.content ?? ''),
-      })),
-    );
-  }
-
-  // 4. Current user message
-  messages.push({ role: 'user', content: String(userMessage ?? '') });
-
-  const baseUrl = (config.baseUrl || 'https://api.groq.com/openai/v1').replace(/\/$/, '');
-  const url = `${baseUrl}/chat/completions`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: config.model || 'llama-3.1-8b-instant',
-      messages,
-      temperature: 0.3,
-      max_tokens: 2048,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Custom provider error (HTTP ${res.status}): ${errText.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  const reply = data?.choices?.[0]?.message?.content ?? '';
-  if (!reply) throw new Error('Empty response received from custom provider');
-  return reply;
+function currentPagePath(): string {
+  return typeof window === 'undefined' ? '' : window.location.pathname;
 }
 
 export async function chat(
@@ -402,12 +222,13 @@ export async function chat(
   problemDescription?: string,
   context?: ChatContext,
 ): Promise<string> {
-  // The server decides (admin setting) whether the IDE chatbot uses Gemini or the primary key.
-  // 2. Default IDE chatbot setup: runs existing Gemini setup via agent-chat (undisturbed)
+  // Only the home-page chatbot is eligible for the server-controlled IDE exception.
   try {
     const { data, error } = await supabase.functions.invoke('agent-chat', {
       body: {
         message: userMessage,
+        pagePath: currentPagePath(),
+        purpose: currentPagePath() === '/' ? 'main-ide-chatbot' : 'feature',
         code,
         problemId,
         history,
@@ -420,18 +241,18 @@ export async function chat(
     });
 
     if (error) {
-      console.warn('Supabase agent-chat error, trying primary AI...', error);
-      const primaryReply = await callPrimaryAI(userMessage);
-      if (primaryReply) return primaryReply;
-      return "Tutor service temporarily unavailable. Please try again.";
+      let message = error.message;
+      if (error.context instanceof Response) {
+        const details = await error.context.json().catch(() => null);
+        message = details?.error || message;
+      }
+      throw new Error(message || 'AI chat request failed.');
     }
-
-    return data.response || data.reply || JSON.stringify(data);
+    if (data?.error) throw new Error(data.error);
+    if (!data?.response) throw new Error('AI returned an empty response.');
+    return data.response;
   } catch (err) {
-    console.warn('Supabase chat function failed, trying primary AI...', err);
-    const primaryReply = await callPrimaryAI(userMessage);
-    if (primaryReply) return primaryReply;
-    return "Tutor service temporarily unavailable. Please try again.";
+    return err instanceof Error ? err.message : 'Tutor service temporarily unavailable. Please try again.';
   }
 }
 
