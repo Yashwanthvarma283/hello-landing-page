@@ -89,6 +89,610 @@ export type Database = {
         }
         Relationships: []
       }
+      analyses: {
+        Row: {
+          algorithm: string | null
+          created_at: string
+          id: string
+          optimizations: string[] | null
+          problem_id: string
+          space_complexity: string | null
+          summary: string | null
+          time_complexity: string | null
+          user_id: string
+        }
+        Insert: {
+          algorithm?: string | null
+          created_at?: string
+          id?: string
+          optimizations?: string[] | null
+          problem_id: string
+          space_complexity?: string | null
+          summary?: string | null
+          time_complexity?: string | null
+          user_id: string
+        }
+        Update: {
+          algorithm?: string | null
+          created_at?: string
+          id?: string
+          optimizations?: string[] | null
+          problem_id?: string
+          space_complexity?: string | null
+          summary?: string | null
+          time_complexity?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyses_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contest_results: {
+        Row: {
+          contest_type: string
+          created_at: string
+          id: string
+          problem_keys: string[]
+          problems_attempted: number
+          problems_solved: number
+          score: number
+          total_time_seconds: number
+          user_id: string
+        }
+        Insert: {
+          contest_type?: string
+          created_at?: string
+          id?: string
+          problem_keys?: string[]
+          problems_attempted?: number
+          problems_solved?: number
+          score?: number
+          total_time_seconds?: number
+          user_id: string
+        }
+        Update: {
+          contest_type?: string
+          created_at?: string
+          id?: string
+          problem_keys?: string[]
+          problems_attempted?: number
+          problems_solved?: number
+          score?: number
+          total_time_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      custom_problems: {
+        Row: {
+          created_at: string
+          description: string
+          difficulty: string
+          id: string
+          is_public: boolean
+          starter_code: string
+          test_cases: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          id?: string
+          is_public?: boolean
+          starter_code?: string
+          test_cases?: Json
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          difficulty?: string
+          id?: string
+          is_public?: boolean
+          starter_code?: string
+          test_cases?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      discussion_posts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          likes: number
+          parent_id: string | null
+          problem_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          likes?: number
+          parent_id?: string | null
+          problem_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          likes?: number
+          parent_id?: string | null
+          problem_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discussion_posts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "discussion_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_history: {
+        Row: {
+          code_snapshot: string
+          created_at: string
+          execution_time_ms: number | null
+          id: string
+          language: string
+          passed: boolean
+          problem_id: string
+          test_results: Json
+          user_id: string
+        }
+        Insert: {
+          code_snapshot?: string
+          created_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          language?: string
+          passed?: boolean
+          problem_id: string
+          test_results?: Json
+          user_id: string
+        }
+        Update: {
+          code_snapshot?: string
+          created_at?: string
+          execution_time_ms?: number | null
+          id?: string
+          language?: string
+          passed?: boolean
+          problem_id?: string
+          test_results?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hints: {
+        Row: {
+          created_at: string
+          hint_level: number
+          hint_text: string
+          id: string
+          problem_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hint_level?: number
+          hint_text: string
+          id?: string
+          problem_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hint_level?: number
+          hint_text?: string
+          id?: string
+          problem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hints_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_results: {
+        Row: {
+          ai_feedback: string | null
+          code_snapshot: string
+          created_at: string
+          difficulty: string
+          id: string
+          problem_title: string
+          score: number
+          time_taken_seconds: number
+          user_id: string
+        }
+        Insert: {
+          ai_feedback?: string | null
+          code_snapshot?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          problem_title: string
+          score?: number
+          time_taken_seconds?: number
+          user_id: string
+        }
+        Update: {
+          ai_feedback?: string | null
+          code_snapshot?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          problem_title?: string
+          score?: number
+          time_taken_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      learning_history: {
+        Row: {
+          algorithm: string
+          completed: boolean
+          created_at: string
+          difficulty: string
+          id: string
+          time_spent_seconds: number
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          algorithm: string
+          completed?: boolean
+          created_at?: string
+          difficulty?: string
+          id?: string
+          time_spent_seconds?: number
+          topic: string
+          user_id: string
+        }
+        Update: {
+          algorithm?: string
+          completed?: boolean
+          created_at?: string
+          difficulty?: string
+          id?: string
+          time_spent_seconds?: number
+          topic?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      problems: {
+        Row: {
+          bookmarked: boolean
+          code: string
+          created_at: string
+          difficulty: string
+          id: string
+          notes: string
+          solved: boolean
+          time_spent_seconds: number
+          title: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bookmarked?: boolean
+          code?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          notes?: string
+          solved?: boolean
+          time_spent_seconds?: number
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bookmarked?: boolean
+          code?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          notes?: string
+          solved?: boolean
+          time_spent_seconds?: number
+          title?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      shared_solutions: {
+        Row: {
+          approach: string
+          code: string
+          created_at: string
+          id: string
+          language: string
+          likes: number
+          problem_key: string
+          user_id: string
+        }
+        Insert: {
+          approach?: string
+          code: string
+          created_at?: string
+          id?: string
+          language?: string
+          likes?: number
+          problem_key: string
+          user_id: string
+        }
+        Update: {
+          approach?: string
+          code?: string
+          created_at?: string
+          id?: string
+          language?: string
+          likes?: number
+          problem_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      solutions: {
+        Row: {
+          created_at: string
+          explanation: string | null
+          id: string
+          problem_id: string
+          solution_code: string
+          solution_type: string
+          space_complexity: string | null
+          time_complexity: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          problem_id: string
+          solution_code: string
+          solution_type: string
+          space_complexity?: string | null
+          time_complexity?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          problem_id?: string
+          solution_code?: string
+          solution_type?: string
+          space_complexity?: string | null
+          time_complexity?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solutions_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_cases: {
+        Row: {
+          content: string
+          created_at: string
+          expected_output: string
+          id: string
+          input: string
+          inputs: Json
+          problem_id: string
+          user_id: string
+          variable_name: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          expected_output?: string
+          id?: string
+          input?: string
+          inputs?: Json
+          problem_id: string
+          user_id: string
+          variable_name?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          expected_output?: string
+          id?: string
+          input?: string
+          inputs?: Json
+          problem_id?: string
+          user_id?: string
+          variable_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_cases_problem_id_fkey"
+            columns: ["problem_id"]
+            isOneToOne: false
+            referencedRelation: "problems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_key: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_code_saves: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          language: string
+          problem_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          id?: string
+          language?: string
+          problem_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          language?: string
+          problem_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_problem_progress: {
+        Row: {
+          attempts: number
+          created_at: string
+          ease_factor: number
+          id: string
+          last_attempted: string | null
+          marked_for_revision: boolean
+          next_review_at: string | null
+          problem_key: string
+          review_count: number
+          review_interval: number
+          solved: boolean
+          solved_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          ease_factor?: number
+          id?: string
+          last_attempted?: string | null
+          marked_for_revision?: boolean
+          next_review_at?: string | null
+          problem_key: string
+          review_count?: number
+          review_interval?: number
+          solved?: boolean
+          solved_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          ease_factor?: number
+          id?: string
+          last_attempted?: string | null
+          marked_for_revision?: boolean
+          next_review_at?: string | null
+          problem_key?: string
+          review_count?: number
+          review_interval?: number
+          solved?: boolean
+          solved_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
