@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { chatWithFeatureAI, getAISettings, getUserIdFromRequest, logAIUsage } from "../_shared/ai-pool.ts";
+import { usePrimaryForChat } from "../_shared/ai-routing.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,12 +35,13 @@ async function callLovable(messages: any[], temperature: number, userId: string 
   return data?.choices?.[0]?.message?.content ?? '';
 }
 
-async function callAI(messages: any[], req: Request, temperature = 0.3): Promise<{ content: string; keyIndex: number; provider: string }> {
+async function callAI(messages: any[], req: Request, pagePath: unknown, purpose: unknown, temperature = 0.3): Promise<{ content: string; keyIndex: number; provider: string }> {
   const userId = await getUserIdFromRequest(req);
+  if (!userId) throw new Error('Please sign in to use AI.');
   const { ide_use_primary } = await getAISettings();
-  if (ide_use_primary) {
-    // Admin turned on "Also use for IDE chatbot" → route through the active primary key.
-    const r = await chatWithFeatureAI('ide-chatbot', { messages, temperature, userId });
+  if (usePrimaryForChat(pagePath, purpose, ide_use_primary)) {
+    const feature = purpose === 'main-ide-chatbot' && pagePath === '/' ? 'ide-chatbot' : 'feature-chat';
+    const r = await chatWithFeatureAI(feature, { messages, temperature, userId, req });
     return { content: r.content, keyIndex: 0, provider: r.provider };
   }
   const content = await callLovable(messages, temperature, userId);
@@ -64,6 +66,9 @@ serve(async (req) => {
       problemExamples,
       problemConstraints,
       module,
+      pagePath,
+      purpose,
+      temperature = 0.3,
     } = body || {};
 
     const messages: any[] = [];
@@ -138,7 +143,15 @@ serve(async (req) => {
     // 4. Current user message
     messages.push({ role: 'user', content: String(message ?? '') });
 
-    const { content, keyIndex, provider } = await callAI(messages, req);
+    if (typeof message !== 'string' || !message.trim() || message.length > 50000 ||
+        (pagePath !== undefined && (typeof pagePath !== 'string' || pagePath.length > 500)) ||
+        (purpose !== undefined && purpose !== 'main-ide-chatbot' && purpose !== 'feature') ||
+        typeof temperature !== 'number' || !Number.isFinite(temperature) || temperature < 0 || temperature > 2) {
+      return new Response(JSON.stringify({ error: 'Invalid AI chat request.' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const { content, keyIndex, provider } = await callAI(messages, req, pagePath, purpose, temperature);
 
     return new Response(JSON.stringify({ response: content, keyUsed: keyIndex, provider }), {
 
