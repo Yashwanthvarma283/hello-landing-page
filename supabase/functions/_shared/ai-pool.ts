@@ -26,6 +26,7 @@ export interface PoolKey {
 
 export interface AIResult {
   content: string;
+  raw?: any;
   provider: string;
   keyId: string;
   keyLabel: string;
@@ -41,6 +42,12 @@ export interface ChatOptions {
   stream?: boolean;
   tools?: any[];
   toolChoice?: any;
+  /** Incoming request — used to attribute usage to the signed-in user. */
+  req?: Request;
+  /** Explicit user id (overrides req). */
+  userId?: string | null;
+  /** Feature name recorded in ai_usage_logs. */
+  feature?: string;
 }
 
 export interface StreamResult {
@@ -117,6 +124,7 @@ async function callKey(key: PoolKey, model: string, opts: ChatOptions): Promise<
     },
     body: JSON.stringify({
       model,
+      ...(opts.stream ? { stream_options: { include_usage: true } } : {}),
       messages: opts.messages,
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.maxTokens ?? 4096,
@@ -125,6 +133,78 @@ async function callKey(key: PoolKey, model: string, opts: ChatOptions): Promise<
       ...(opts.tools ? { tools: opts.tools, tool_choice: opts.toolChoice ?? 'auto' } : {}),
     }),
   });
+}
+
+
+// ── Usage logging ─────────────────────────────────────────────────────────────
+export async function getUserIdFromRequest(req?: Request): Promise<string | null> {
+  try {
+    const auth = req?.headers.get('Authorization') ?? '';
+    const token = auth.replace(/^Bearer\s+/i, '');
+    if (!token) return null;
+    const { data } = await adminClient().auth.getUser(token);
+    return data?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export interface UsageLogEntry {
+  userId?: string | null;
+  feature: string;
+  provider: string;
+  model: string;
+  keyId?: string | null;
+  keyLabel?: string | null;
+  status: 'ok' | 'rate_limited' | 'invalid' | 'error';
+  httpStatus?: number | null;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  latencyMs?: number;
+  headers?: Headers | null;
+  error?: string | null;
+}
+
+export async function logAIUsage(e: UsageLogEntry) {
+  try {
+    const pt = Number(e.promptTokens ?? 0) || 0;
+    const ct = Number(e.completionTokens ?? 0) || 0;
+    await adminClient().from('ai_usage_logs').insert({
+      user_id: e.userId ?? null,
+      feature: e.feature || 'unknown',
+      provider: e.provider || '',
+      model: e.model || '',
+      key_id: e.keyId ?? null,
+      key_label: e.keyLabel ?? null,
+      status: e.status,
+      http_status: e.httpStatus ?? null,
+      prompt_tokens: pt,
+      completion_tokens: ct,
+      total_tokens: Number(e.totalTokens ?? pt + ct) || pt + ct,
+      latency_ms: e.latencyMs ?? null,
+      rate_limit_remaining_requests: e.headers?.get('x-ratelimit-remaining-requests') ?? null,
+      rate_limit_remaining_tokens: e.headers?.get('x-ratelimit-remaining-tokens') ?? null,
+      error: e.error ? String(e.error).slice(0, 500) : null,
+    });
+  } catch {
+    // logging must never break a request
+  }
+}
+
+async function resolveUser(opts: ChatOptions): Promise<string | null> {
+  if (opts.userId !== undefined) return opts.userId;
+  return await getUserIdFromRequest(opts.req);
+}
+
+// ── Global AI settings ───────────────────────────────────────────────────────
+export async function getAISettings(): Promise<{ ide_use_primary: boolean }> {
+  try {
+    const { data } = await adminClient().from('ai_settings').select('ide_use_primary').eq('id', true).maybeSingle();
+    return { ide_use_primary: !!data?.ide_use_primary };
+  } catch {
+    return { ide_use_primary: false };
+  }
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
