@@ -18,6 +18,11 @@ serve(async (req) => {
 
   try {
     const { code, title, difficulty, problem_key, problemDescription } = await req.json();
+    const cleanCode = String(code || "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const sig = cleanCode.match(/(?:public|private|protected|static|\s)+[\w<>\[\],\s]+?\s+(\w+)\s*\(([^)]*)\)\s*\{/);
+    const paramNames: string[] = sig && sig[2].trim()
+      ? sig[2].split(/,(?![^<]*>)/).map((p: string) => p.trim().split(/\s+/).pop() || "").filter(Boolean)
+      : [];
 
     const response = await aiGatewayFetch("test-case-generation", req, {
         messages: [
@@ -57,6 +62,10 @@ Expected output must EXACTLY match what System.out.println() would produce in Ja
             role: "user",
             content: `Generate 5 high-quality test cases (normal, edge, boundary, large input, corner) for this Java function:
 ${title ? `Problem Title: ${title}\n` : ''}${difficulty ? `Difficulty: ${difficulty}\n` : ''}${problemDescription ? `Problem Description: ${problemDescription}\n` : ''}
+Method signature to test: ${sig ? `${sig[1]}(${sig[2].trim()})` : "(see code)"}
+The "inputs" object of EVERY test case MUST use exactly these keys: ${paramNames.length ? paramNames.join(", ") : "the method's parameter names"}.
+The tests MUST be for the problem described above (not a different problem). Compute expected outputs from the PROBLEM STATEMENT's correct answer, NOT from the user's code (the user's code may be wrong or empty).
+
 Code:
 ${code}`
           }
@@ -131,7 +140,16 @@ ${code}`
         );
         const hasExpected = tc.expectedOutput && String(tc.expectedOutput).trim() !== "";
         return hasInputs && hasExpected;
-      }).slice(0, 5);
+      }).map((tc: any) => {
+        if (!paramNames.length) return tc;
+        const vals = Object.values(tc.inputs);
+        const inputs: Record<string, string> = {};
+        paramNames.forEach((n, i) => {
+          const v = tc.inputs[n] ?? (vals.length === paramNames.length ? vals[i] : undefined);
+          if (v !== undefined && v !== null) inputs[n] = typeof v === "string" ? v : JSON.stringify(v);
+        });
+        return Object.keys(inputs).length === paramNames.length ? { ...tc, inputs, expectedOutput: String(tc.expectedOutput).trim() } : null;
+      }).filter(Boolean).slice(0, 5);
 
       // Best-effort: merge into shared cache so other users benefit
       if (problem_key && validCases.length > 0) {
@@ -150,9 +168,8 @@ ${code}`
             // ALWAYS update the cache with the new generated cases, but prepend them to existing ones
             // Actually, let's just REPLACE them if the user is explicitly generating new ones, 
             // or merge them and deduplicate. For now, let's just merge.
-            const existingCases = Array.isArray((existing as any).test_cases) ? (existing as any).test_cases : [];
-            const merged = [...existingCases, ...normalized].slice(-20); // Keep last 20
-            await adminClient.from("problem_test_cases").update({ test_cases: merged }).eq("id", (existing as any).id);
+            // Replace (not merge) so stale/irrelevant cases from earlier runs never linger.
+            await adminClient.from("problem_test_cases").update({ test_cases: normalized }).eq("id", (existing as any).id);
           } else {
             const authHeader = req.headers.get("Authorization") || "";
             let userId: string | null = null;
