@@ -1,7 +1,7 @@
 import { chatWithFeatureAI } from '../_shared/ai-pool.ts';
 // Groq agent edge function with API key rotation.
 // Two modes: 'generate' (write Java solution) and 'fix' (repair Java code given an error).
-// Rotates through GROQ_API_KEY_1..5; on 429/401 falls back to next key.
+// Uses the admin-selected primary AI key (see _shared/ai-pool.ts).
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,10 +9,6 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
-const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const LOVABLE_MODEL = 'google/gemini-3.8-flash';
 
 async function callAI(messages: any[], temperature = 0.2, req?: Request): Promise<{ content: string; keyIndex: number; provider: string }> {
   const r = await chatWithFeatureAI('agent-solver', { messages, temperature, req });
