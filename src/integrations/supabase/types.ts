@@ -187,6 +187,90 @@ export type Database = {
           },
         ]
       }
+      coin_daily_claims: {
+        Row: {
+          claim_key: string
+          created_at: string
+          id: string
+          rule_key: string
+          user_id: string
+        }
+        Insert: {
+          claim_key: string
+          created_at?: string
+          id?: string
+          rule_key: string
+          user_id: string
+        }
+        Update: {
+          claim_key?: string
+          created_at?: string
+          id?: string
+          rule_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coin_reward_rules: {
+        Row: {
+          amount: number
+          description: string | null
+          enabled: boolean
+          key: string
+          label: string
+          per_day_limit: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          description?: string | null
+          enabled?: boolean
+          key: string
+          label: string
+          per_day_limit?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          label?: string
+          per_day_limit?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          kind: string
+          meta: Json | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          kind: string
+          meta?: Json | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          meta?: Json | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       contest_results: {
         Row: {
           contest_type: string
@@ -261,6 +345,123 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      daily_questions: {
+        Row: {
+          constraints: Json
+          created_at: string
+          created_by: string | null
+          daily_date: string | null
+          description: string
+          difficulty: string
+          examples: Json
+          hidden_test_cases: Json
+          id: string
+          is_active: boolean
+          slug: string
+          starter_code: string
+          title: string
+          topic: string
+          updated_at: string
+          visible_test_cases: Json
+        }
+        Insert: {
+          constraints?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_date?: string | null
+          description?: string
+          difficulty?: string
+          examples?: Json
+          hidden_test_cases?: Json
+          id?: string
+          is_active?: boolean
+          slug: string
+          starter_code?: string
+          title: string
+          topic?: string
+          updated_at?: string
+          visible_test_cases?: Json
+        }
+        Update: {
+          constraints?: Json
+          created_at?: string
+          created_by?: string | null
+          daily_date?: string | null
+          description?: string
+          difficulty?: string
+          examples?: Json
+          hidden_test_cases?: Json
+          id?: string
+          is_active?: boolean
+          slug?: string
+          starter_code?: string
+          title?: string
+          topic?: string
+          updated_at?: string
+          visible_test_cases?: Json
+        }
+        Relationships: []
+      }
+      daily_submissions: {
+        Row: {
+          code: string
+          created_at: string
+          first_failing_case: Json | null
+          id: string
+          language: string
+          memory_kb: number | null
+          passed_count: number
+          question_id: string
+          runtime_ms: number | null
+          status: string
+          total_count: number
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          first_failing_case?: Json | null
+          id?: string
+          language?: string
+          memory_kb?: number | null
+          passed_count?: number
+          question_id: string
+          runtime_ms?: number | null
+          status?: string
+          total_count?: number
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          first_failing_case?: Json | null
+          id?: string
+          language?: string
+          memory_kb?: number | null
+          passed_count?: number
+          question_id?: string
+          runtime_ms?: number | null
+          status?: string
+          total_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_submissions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "daily_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_submissions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "daily_questions_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       direct_messages: {
         Row: {
@@ -975,6 +1176,51 @@ export type Database = {
           },
         ]
       }
+      store_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          enabled: boolean
+          icon: string | null
+          id: string
+          meta: Json | null
+          name: string
+          price: number
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          icon?: string | null
+          id?: string
+          meta?: Json | null
+          name: string
+          price: number
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          icon?: string | null
+          id?: string
+          meta?: Json | null
+          name?: string
+          price?: number
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_patch_proposals: {
         Row: {
           context_snippet: string | null
@@ -1118,6 +1364,63 @@ export type Database = {
         }
         Relationships: []
       }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          lifetime_earned: number
+          lifetime_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_inventory: {
+        Row: {
+          acquired_at: string
+          equipped: boolean
+          expires_at: string | null
+          id: string
+          item_slug: string
+          quantity: number
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          equipped?: boolean
+          expires_at?: string | null
+          id?: string
+          item_slug: string
+          quantity?: number
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          equipped?: boolean
+          expires_at?: string | null
+          id?: string
+          item_slug?: string
+          quantity?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_problem_progress: {
         Row: {
           attempts: number
@@ -1207,6 +1510,57 @@ export type Database = {
       }
     }
     Views: {
+      daily_questions_public: {
+        Row: {
+          constraints: Json | null
+          created_at: string | null
+          daily_date: string | null
+          description: string | null
+          difficulty: string | null
+          examples: Json | null
+          id: string | null
+          is_active: boolean | null
+          slug: string | null
+          starter_code: string | null
+          title: string | null
+          topic: string | null
+          updated_at: string | null
+          visible_test_cases: Json | null
+        }
+        Insert: {
+          constraints?: Json | null
+          created_at?: string | null
+          daily_date?: string | null
+          description?: string | null
+          difficulty?: string | null
+          examples?: Json | null
+          id?: string | null
+          is_active?: boolean | null
+          slug?: string | null
+          starter_code?: string | null
+          title?: string | null
+          topic?: string | null
+          updated_at?: string | null
+          visible_test_cases?: Json | null
+        }
+        Update: {
+          constraints?: Json | null
+          created_at?: string | null
+          daily_date?: string | null
+          description?: string | null
+          difficulty?: string | null
+          examples?: Json | null
+          id?: string | null
+          is_active?: boolean | null
+          slug?: string | null
+          starter_code?: string | null
+          title?: string | null
+          topic?: string | null
+          updated_at?: string | null
+          visible_test_cases?: Json | null
+        }
+        Relationships: []
+      }
       public_profile_stats: {
         Row: {
           attempted_count: number | null
@@ -1222,6 +1576,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_adjust_coins: {
+        Args: { _amount: number; _reason: string; _target_user: string }
+        Returns: undefined
+      }
       admin_delete_user: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -1245,6 +1603,10 @@ export type Database = {
         Args: { p_key_id: string; p_patch: Json }
         Returns: undefined
       }
+      award_coins: {
+        Args: { _claim_key?: string; _rule_key: string; _user_id: string }
+        Returns: number
+      }
       get_user_status: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1253,6 +1615,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_item: { Args: { _item_slug: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user" | "moderator"
