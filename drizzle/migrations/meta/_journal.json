@@ -85,6 +85,13 @@
       "when": 1793379495511,
       "tag": "0011_ai_usage_logs_and_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793379513867,
+      "tag": "0012_backfill_data_api_grants",
+      "breakpoints": true
     }
   ]
 }
