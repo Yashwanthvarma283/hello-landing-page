@@ -71,6 +71,13 @@
       "when": 1793379452572,
       "tag": "0009_store_effects_20260609",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793379472847,
+      "tag": "0010_cosmetics_streak_primary_202607",
+      "breakpoints": true
     }
   ]
 }

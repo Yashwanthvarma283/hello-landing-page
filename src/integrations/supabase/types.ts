@@ -76,6 +76,7 @@ export type Database = {
           enabled: boolean
           error_count: number
           id: string
+          is_primary: boolean
           label: string
           last_error: string | null
           last_used_at: string | null
@@ -92,6 +93,7 @@ export type Database = {
           enabled?: boolean
           error_count?: number
           id?: string
+          is_primary?: boolean
           label: string
           last_error?: string | null
           last_used_at?: string | null
@@ -108,6 +110,7 @@ export type Database = {
           enabled?: boolean
           error_count?: number
           id?: string
+          is_primary?: boolean
           label?: string
           last_error?: string | null
           last_used_at?: string | null
@@ -1221,6 +1224,27 @@ export type Database = {
         }
         Relationships: []
       }
+      streak_restores: {
+        Row: {
+          created_at: string
+          id: string
+          restore_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          restore_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          restore_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       system_patch_proposals: {
         Row: {
           context_snippet: string | null
@@ -1608,6 +1632,7 @@ export type Database = {
         Returns: number
       }
       consume_extra_hint: { Args: never; Returns: boolean }
+      consume_streak_restore: { Args: { _gap_date: string }; Returns: Json }
       equip_item: { Args: { _item_slug: string }; Returns: Json }
       get_active_effects: {
         Args: { _user_id: string }
@@ -1618,6 +1643,13 @@ export type Database = {
           item_slug: string
           meta: Json
           name: string
+        }[]
+      }
+      get_public_cosmetics: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          cosmetics: Json
+          user_id: string
         }[]
       }
       get_user_status: { Args: { _user_id: string }; Returns: string }
