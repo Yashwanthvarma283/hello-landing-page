@@ -29,6 +29,13 @@
       "when": 1793379251940,
       "tag": "0003_core_tables_20260308",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793379277570,
+      "tag": "0004_roles_and_cache_202604",
+      "breakpoints": true
     }
   ]
 }

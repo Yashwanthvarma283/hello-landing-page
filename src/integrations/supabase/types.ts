@@ -389,6 +389,66 @@ export type Database = {
         }
         Relationships: []
       }
+      problem_test_cases: {
+        Row: {
+          constraints: Json
+          created_at: string
+          description: string
+          difficulty: string
+          examples: Json
+          function_name: string
+          generated_by: string | null
+          hints: Json
+          id: string
+          params: Json
+          problem_key: string
+          return_type: string
+          starter_code: string
+          test_cases: Json
+          title: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          constraints?: Json
+          created_at?: string
+          description?: string
+          difficulty?: string
+          examples?: Json
+          function_name?: string
+          generated_by?: string | null
+          hints?: Json
+          id?: string
+          params?: Json
+          problem_key: string
+          return_type?: string
+          starter_code?: string
+          test_cases?: Json
+          title?: string
+          topic?: string
+          updated_at?: string
+        }
+        Update: {
+          constraints?: Json
+          created_at?: string
+          description?: string
+          difficulty?: string
+          examples?: Json
+          function_name?: string
+          generated_by?: string | null
+          hints?: Json
+          id?: string
+          params?: Json
+          problem_key?: string
+          return_type?: string
+          starter_code?: string
+          test_cases?: Json
+          title?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       problems: {
         Row: {
           bookmarked: boolean
@@ -436,18 +496,24 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ban_until: string | null
           created_at: string
           id: string
+          status: string
           username: string
         }
         Insert: {
+          ban_until?: string | null
           created_at?: string
           id: string
+          status?: string
           username: string
         }
         Update: {
+          ban_until?: string | null
           created_at?: string
           id?: string
+          status?: string
           username?: string
         }
         Relationships: []
@@ -675,6 +741,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string
@@ -702,9 +786,17 @@ export type Database = {
         Args: { p_key_id: string; p_patch: Json }
         Returns: undefined
       }
+      get_user_status: { Args: { _user_id: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -831,6 +923,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+    },
   },
 } as const
