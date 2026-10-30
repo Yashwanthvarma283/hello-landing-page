@@ -146,6 +146,95 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_settings: {
+        Row: {
+          id: boolean
+          ide_use_primary: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: boolean
+          ide_use_primary?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: boolean
+          ide_use_primary?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_logs: {
+        Row: {
+          completion_tokens: number
+          created_at: string
+          error: string | null
+          feature: string
+          http_status: number | null
+          id: string
+          key_id: string | null
+          key_label: string | null
+          latency_ms: number | null
+          model: string
+          prompt_tokens: number
+          provider: string
+          rate_limit_remaining_requests: string | null
+          rate_limit_remaining_tokens: string | null
+          status: string
+          total_tokens: number
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number
+          created_at?: string
+          error?: string | null
+          feature: string
+          http_status?: number | null
+          id?: string
+          key_id?: string | null
+          key_label?: string | null
+          latency_ms?: number | null
+          model?: string
+          prompt_tokens?: number
+          provider?: string
+          rate_limit_remaining_requests?: string | null
+          rate_limit_remaining_tokens?: string | null
+          status?: string
+          total_tokens?: number
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number
+          created_at?: string
+          error?: string | null
+          feature?: string
+          http_status?: number | null
+          id?: string
+          key_id?: string | null
+          key_label?: string | null
+          latency_ms?: number | null
+          model?: string
+          prompt_tokens?: number
+          provider?: string
+          rate_limit_remaining_requests?: string | null
+          rate_limit_remaining_tokens?: string | null
+          status?: string
+          total_tokens?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "ai_api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analyses: {
         Row: {
           algorithm: string | null
