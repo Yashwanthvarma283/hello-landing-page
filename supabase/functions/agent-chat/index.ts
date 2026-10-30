@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const LOVABLE_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
-const LOVABLE_MODEL = 'google/gemini-3.7-flash';
+const LOVABLE_MODEL = 'google/gemini-3-flash-preview';
 
 // Default IDE chatbot: the built-in Gemini setup (unchanged). Usage is logged.
 async function callLovable(messages: any[], temperature: number, userId: string | null): Promise<string> {

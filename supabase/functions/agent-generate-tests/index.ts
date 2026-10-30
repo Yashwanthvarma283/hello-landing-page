@@ -12,7 +12,7 @@ const corsHeaders = {
 
 
 async function callAI(messages: any[], req?: Request): Promise<string> {
-  const r = await chatWithFeatureAI('agent-generate-tests', { messages, req });
+  const r = await chatWithFeatureAI('agent-generate-tests', { messages, req, responseFormat: 'json', maxTokens: 8000 });
   return r.content;
 }
 

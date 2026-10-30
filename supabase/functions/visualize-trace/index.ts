@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiGatewayFetch } from "../_shared/ai-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,22 +38,13 @@ serve(async (req) => {
     const { code, stdin } = await req.json();
     if (!code || typeof code !== "string") throw new Error("code is required");
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const numbered = code
       .split("\n")
       .map((l: string, i: number) => `${i + 1}: ${l}`)
       .join("\n");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    const response = await aiGatewayFetch("code-visualizer", req, {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
@@ -61,8 +53,7 @@ serve(async (req) => {
             content: `Trace this Java program.${stdin ? `\n\nSTDIN:\n${stdin}` : ""}\n\nSOURCE (line numbers prefixed, do not count the prefix as code):\n${numbered}`,
           },
         ],
-      }),
-    });
+      });
 
     if (!response.ok) {
       const status = response.status === 429 || response.status === 402 ? response.status : 500;
@@ -71,7 +62,7 @@ serve(async (req) => {
           ? "Rate limited, try again in a moment."
           : response.status === 402
           ? "AI credits exhausted."
-          : "AI error while tracing.";
+          : await response.json().then((j: any) => j?.error || "AI error while tracing.").catch(() => "AI error while tracing.");
       return new Response(JSON.stringify({ error: msg }), {
         status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

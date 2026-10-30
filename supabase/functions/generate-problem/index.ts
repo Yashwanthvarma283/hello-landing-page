@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { chatWithFeatureAI } from "../_shared/ai-pool.ts";
+import { aiGatewayFetch, extractJSON } from "../_shared/ai-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,11 +12,20 @@ serve(async (req) => {
   try {
     const { difficulty, topic } = await req.json();
 
-    const result = await chatWithFeatureAI("problem-generation", {
-      req,
+    const resp = await aiGatewayFetch("problem-generation", req, {
+      temperature: 0.7,
       messages: [
-        { role: "system", content: "You are a coding problem generator. Generate unique, well-structured Java DSA problems." },
-        { role: "user", content: `Generate a ${difficulty} difficulty Java DSA problem about "${topic}". Include a clear title, description, examples with input/output, constraints, and starter code with only the function signature.` },
+        { role: "system", content: `You are a senior LeetCode problem setter. Write ORIGINAL Java DSA problems in exact LeetCode style.
+
+FORMAT RULES:
+- title: short LeetCode-style title (e.g. "Longest Balanced Substring"), no numbering.
+- description: the problem statement only, in LeetCode voice: "Given an integer array \`nums\` and an integer \`k\`, return ...". Use \`backticks\` for variable names. Define every term, state what to return, mention tie-breaking / "You may assume ..." rules. 2-5 short paragraphs separated by \n\n. Do NOT put examples or constraints inside the description.
+- examples: 2-3 examples. input uses LeetCode format exactly like "nums = [2,7,11,15], target = 9" (parameter names identical to the method signature). output is the exact return value like "[0,1]", "true", "3", "\"abc\"". explanation is one or two sentences showing why.
+- constraints: LeetCode-style bounds, e.g. "1 <= nums.length <= 10^5", "-10^9 <= nums[i] <= 10^9", "s consists of lowercase English letters.", "Only one valid answer exists."
+- starterCode: "class Solution {\n    public <ReturnType> <methodName>(<params>) {\n        \n    }\n}" — only the empty method, no solution, no main.
+- The examples' outputs MUST be correct for the described problem. Double-check them.
+- difficulty must equal the requested difficulty; topic must equal the requested topic.` },
+        { role: "user", content: `Create a ${difficulty} LeetCode-style Java problem on the topic "${topic}". Make it a genuine ${difficulty} problem for that topic.` },
       ],
       tools: [{
         type: "function",
@@ -39,15 +48,24 @@ serve(async (req) => {
           },
         },
       }],
-      toolChoice: { type: "function", function: { name: "return_problem" } },
+      tool_choice: { type: "function", function: { name: "return_problem" } },
     });
 
+    if (!resp.ok) {
+      return new Response(await resp.text(), { status: resp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const data = await resp.json();
     let problem: any = null;
-    const toolCall = result.raw?.choices?.[0]?.message?.tool_calls?.[0];
-    if (toolCall) {
-      problem = JSON.parse(toolCall.function.arguments);
-    } else if (result.content) {
-      try { problem = JSON.parse(result.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()); } catch { problem = null; }
+    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
+    try {
+      problem = toolCall ? JSON.parse(toolCall.function.arguments) : extractJSON(data?.choices?.[0]?.message?.content ?? "");
+    } catch { problem = null; }
+    if (problem) {
+      problem.difficulty = difficulty || problem.difficulty;
+      problem.topic = topic || problem.topic;
+      problem.examples = Array.isArray(problem.examples) ? problem.examples.filter((e: any) => e?.input && e?.output) : [];
+      problem.constraints = Array.isArray(problem.constraints) ? problem.constraints : [];
+      if (!problem.title || !problem.description || problem.examples.length === 0) problem = null;
     }
 
     if (problem) {

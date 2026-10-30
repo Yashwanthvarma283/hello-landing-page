@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { aiGatewayFetch } from "../_shared/ai-compat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +11,6 @@ serve(async (req) => {
 
   try {
     const { algorithm, code } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const prompt = code
       ? `Explain this Java code step by step. Show what happens at each line, trace through variables, and explain the algorithm used:\n\n${code}`
@@ -26,21 +25,13 @@ serve(async (req) => {
 
 Use clear formatting with headers, code blocks, and diagrams.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    const response = await aiGatewayFetch("learning-mode", req, {
         messages: [
           { role: "system", content: "You are an expert DSA tutor. Explain algorithms clearly with visual diagrams (ASCII art), step-by-step traces, and Java code examples. Make explanations beginner-friendly but thorough." },
           { role: "user", content: prompt },
         ],
         stream: true,
-      }),
-    });
+      });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -55,7 +46,7 @@ Use clear formatting with headers, code blocks, and diagrams.`;
       }
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI error" }), {
+      return new Response(t, {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
