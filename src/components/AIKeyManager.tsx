@@ -42,8 +42,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import {
-} from "@/lib/ai-backend";
 
 // Derive the project URL from the initialized supabase client
 const SUPABASE_URL =
@@ -950,7 +948,7 @@ const AIKeyManager = () => {
             {[...(primaryKey ? [primaryKey] : []), ...nonPrimaryKeys].map((key) => {
               const ts = testState[key.id];
               const isChatbotKey =
-                chatbotMode === "custom" && activeChatbotConfig?.provider === key.provider;
+                ideUsePrimary && !!key.is_primary;
 
               return (
                 <div
