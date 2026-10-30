@@ -15,8 +15,17 @@ serve(async (req) => {
     const result = await chatWithFeatureAI("problem-generation", {
       req,
       messages: [
-        { role: "system", content: "You are a coding problem generator. Generate unique, well-structured Java DSA problems." },
-        { role: "user", content: `Generate a ${difficulty} difficulty Java DSA problem about "${topic}". Include a clear title, description, examples with input/output, constraints, and starter code with only the function signature.` },
+        { role: "system", content: `You are a senior LeetCode problem setter. Write ORIGINAL Java DSA problems in exact LeetCode style.
+
+FORMAT RULES:
+- title: short LeetCode-style title (e.g. "Longest Balanced Substring"), no numbering.
+- description: the problem statement only, in LeetCode voice: "Given an integer array \\`nums\\` and an integer \\`k\\`, return ...". Use \\`backticks\\` for variable names. Define every term, state what to return, mention tie-breaking / "You may assume ..." rules. 2-5 short paragraphs separated by \n\n. Do NOT put examples or constraints inside the description.
+- examples: 2-3 examples. input uses LeetCode format exactly like "nums = [2,7,11,15], target = 9" (parameter names identical to the method signature). output is the exact return value like "[0,1]", "true", "3", "\"abc\"". explanation is one or two sentences showing why.
+- constraints: LeetCode-style bounds, e.g. "1 <= nums.length <= 10^5", "-10^9 <= nums[i] <= 10^9", "s consists of lowercase English letters.", "Only one valid answer exists."
+- starterCode: "class Solution {\n    public <ReturnType> <methodName>(<params>) {\n        \n    }\n}" — only the empty method, no solution, no main.
+- The examples' outputs MUST be correct for the described problem. Double-check them.
+- difficulty must equal the requested difficulty; topic must equal the requested topic.` },
+        { role: "user", content: `Create a ${difficulty} LeetCode-style Java problem on the topic "${topic}". Make it a genuine ${difficulty} problem for that topic.` },
       ],
       tools: [{
         type: "function",
