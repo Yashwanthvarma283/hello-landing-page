@@ -209,119 +209,153 @@ export async function getAISettings(): Promise<{ ide_use_primary: boolean }> {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+const NO_PRIMARY =
+  'No primary AI key configured. An admin must add an API key and set it as primary in the Admin Dashboard.';
+
+async function failForStatus(
+  key: PoolKey,
+  res: Response,
+  base: Omit<UsageLogEntry, 'status'>,
+): Promise<never> {
+  const text = await res.text().catch(() => '');
+  if (res.status === 429) {
+    track(key.id, { p_ok: false, p_status: 'rate_limited', p_error: `Rate limited: ${text.slice(0, 200)}` });
+    await logAIUsage({ ...base, status: 'rate_limited', httpStatus: 429, headers: res.headers, error: text });
+    throw new Error(`The primary AI key "${key.label}" has hit its rate limit. An admin must set a different key as primary.`);
+  }
+  if (res.status === 401 || res.status === 403) {
+    track(key.id, { p_ok: false, p_status: 'invalid', p_error: `Auth failed: ${text.slice(0, 200)}` });
+    await logAIUsage({ ...base, status: 'invalid', httpStatus: res.status, headers: res.headers, error: text });
+    throw new Error(`The primary AI key "${key.label}" is invalid or expired. An admin must update or replace it.`);
+  }
+  track(key.id, { p_ok: false, p_error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
+  await logAIUsage({ ...base, status: 'error', httpStatus: res.status, headers: res.headers, error: text });
+  throw new Error(`AI request failed (HTTP ${res.status}): ${text.slice(0, 300)}`);
+}
+
 /**
- * Make a non-streaming AI chat call using the admin-configured primary key.
- * Throws a descriptive error if no primary is set or the key fails.
+ * Non-streaming AI chat call using the admin-configured primary key.
+ * Every call (success or failure) is recorded in ai_usage_logs.
  */
 export async function chatWithPrimaryAI(opts: ChatOptions): Promise<AIResult> {
   const key = await loadPrimary();
+  const userId = await resolveUser(opts);
+  const feature = opts.feature ?? 'unknown';
   if (!key) {
-    throw new Error(
-      'No primary AI key configured. An admin must add an API key and set it as primary in the Admin Dashboard.',
-    );
+    await logAIUsage({ userId, feature, provider: '', model: '', status: 'error', error: 'No primary key' });
+    throw new Error(NO_PRIMARY);
   }
-
   const model = resolveModel(key, opts.model);
+  const started = Date.now();
+  const base = { userId, feature, provider: key.provider, model, keyId: key.id, keyLabel: key.label };
 
   let res: Response;
   try {
     res = await callKey(key, model, opts);
   } catch (e: any) {
     track(key.id, { p_ok: false, p_error: String(e?.message ?? e) });
+    await logAIUsage({ ...base, status: 'error', latencyMs: Date.now() - started, error: String(e?.message ?? e) });
     throw new Error(`AI request failed: ${String(e?.message ?? e)}`);
   }
-
-  if (res.status === 429) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_status: 'rate_limited', p_error: `Rate limited: ${text.slice(0, 200)}` });
-    throw new Error(
-      `The primary AI key "${key.label}" has hit its rate limit. An admin must set a different key as primary.`,
-    );
-  }
-  if (res.status === 401 || res.status === 403) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_status: 'invalid', p_error: `Auth failed: ${text.slice(0, 200)}` });
-    throw new Error(
-      `The primary AI key "${key.label}" is invalid or expired. An admin must update or replace it.`,
-    );
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
-    throw new Error(`AI request failed (HTTP ${res.status}): ${text.slice(0, 300)}`);
-  }
+  if (!res.ok) await failForStatus(key, res, { ...base, latencyMs: Date.now() - started });
 
   const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content ?? '';
-  if (!content) {
+  const msg = data?.choices?.[0]?.message;
+  const content = msg?.content ?? '';
+  const usage = data?.usage ?? {};
+  const logBase = {
+    ...base,
+    httpStatus: res.status,
+    headers: res.headers,
+    latencyMs: Date.now() - started,
+    promptTokens: usage.prompt_tokens,
+    completionTokens: usage.completion_tokens,
+    totalTokens: usage.total_tokens,
+  };
+  if (!content && !msg?.tool_calls?.length) {
     track(key.id, { p_ok: false, p_error: 'Empty response from provider' });
+    await logAIUsage({ ...logBase, status: 'error', error: 'Empty response' });
     throw new Error('AI returned an empty response. Please try again.');
   }
-
   track(key.id, { p_ok: true });
-  return { content, provider: key.provider, keyId: key.id, keyLabel: key.label, model };
+  await logAIUsage({ ...logBase, status: 'ok' });
+  return { content, raw: data, provider: key.provider, keyId: key.id, keyLabel: key.label, model };
 }
 
 /**
- * Streaming variant — returns the raw SSE ReadableStream from the primary key.
- * Throws the same descriptive errors as chatWithPrimaryAI.
+ * Streaming variant — returns the SSE stream from the primary key.
+ * Token usage is read from the final SSE chunk and logged when the stream ends.
  */
 export async function streamWithPrimaryAI(opts: ChatOptions): Promise<StreamResult> {
   const key = await loadPrimary();
+  const userId = await resolveUser(opts);
+  const feature = opts.feature ?? 'unknown';
   if (!key) {
-    throw new Error(
-      'No primary AI key configured. An admin must add an API key and set it as primary in the Admin Dashboard.',
-    );
+    await logAIUsage({ userId, feature, provider: '', model: '', status: 'error', error: 'No primary key' });
+    throw new Error(NO_PRIMARY);
   }
-
   const model = resolveModel(key, opts.model);
+  const started = Date.now();
+  const base = { userId, feature, provider: key.provider, model, keyId: key.id, keyLabel: key.label };
 
   let res: Response;
   try {
     res = await callKey(key, model, { ...opts, stream: true });
   } catch (e: any) {
     track(key.id, { p_ok: false, p_error: String(e?.message ?? e) });
+    await logAIUsage({ ...base, status: 'error', latencyMs: Date.now() - started, error: String(e?.message ?? e) });
     throw new Error(`AI stream request failed: ${String(e?.message ?? e)}`);
   }
-
-  if (res.status === 429) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_status: 'rate_limited', p_error: `Rate limited: ${text.slice(0, 200)}` });
-    throw new Error(
-      `The primary AI key "${key.label}" has hit its rate limit. An admin must set a different key as primary.`,
-    );
-  }
-  if (res.status === 401 || res.status === 403) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_status: 'invalid', p_error: `Auth failed: ${text.slice(0, 200)}` });
-    throw new Error(
-      `The primary AI key "${key.label}" is invalid or expired. An admin must update or replace it.`,
-    );
-  }
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => '');
-    track(key.id, { p_ok: false, p_error: `HTTP ${res.status}: ${text.slice(0, 200)}` });
-    throw new Error(`AI stream failed (HTTP ${res.status}): ${text.slice(0, 300)}`);
-  }
+  if (!res.ok || !res.body) await failForStatus(key, res, { ...base, latencyMs: Date.now() - started });
 
   track(key.id, { p_ok: true });
-  return { body: res.body, provider: key.provider, keyId: key.id, keyLabel: key.label, model };
+  const [clientStream, meterStream] = res.body!.tee();
+  const headers = res.headers;
+  (async () => {
+    const reader = meterStream.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let usage: any = null;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const j = JSON.parse(payload);
+            if (j?.usage) usage = j.usage;
+            else if (j?.x_groq?.usage) usage = j.x_groq.usage;
+          } catch { /* partial */ }
+        }
+      }
+    } catch { /* ignore */ }
+    await logAIUsage({
+      ...base,
+      status: 'ok',
+      httpStatus: 200,
+      headers,
+      latencyMs: Date.now() - started,
+      promptTokens: usage?.prompt_tokens,
+      completionTokens: usage?.completion_tokens,
+      totalTokens: usage?.total_tokens,
+    });
+  })();
+  return { body: clientStream, provider: key.provider, keyId: key.id, keyLabel: key.label, model };
 }
 
-/**
- * Legacy compatibility shim — wraps chatWithPrimaryAI with the old featureKey signature.
- * All existing edge functions that call chatWithFeatureAI() continue to work unchanged.
- * The featureKey argument is ignored since we now use a single primary key for all features.
- */
-export async function chatWithFeatureAI(_featureKey: string, opts: ChatOptions): Promise<AIResult> {
-  return chatWithPrimaryAI(opts);
+/** Feature-tagged wrappers — the featureKey is recorded in usage logs. */
+export async function chatWithFeatureAI(featureKey: string, opts: ChatOptions): Promise<AIResult> {
+  return chatWithPrimaryAI({ ...opts, feature: opts.feature ?? featureKey });
 }
 
-/**
- * Legacy compatibility shim — wraps streamWithPrimaryAI with the old featureKey signature.
- */
-export async function streamWithFeatureAI(_featureKey: string, opts: ChatOptions): Promise<StreamResult> {
-  return streamWithPrimaryAI(opts);
+export async function streamWithFeatureAI(featureKey: string, opts: ChatOptions): Promise<StreamResult> {
+  return streamWithPrimaryAI({ ...opts, feature: opts.feature ?? featureKey });
 }
 
 // List models a provider exposes (used by the admin dashboard).
