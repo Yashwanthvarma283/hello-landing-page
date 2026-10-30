@@ -433,6 +433,80 @@ export type Database = {
           },
         ]
       }
+      interview_lobbies: {
+        Row: {
+          closed_at: string | null
+          code: string
+          created_at: string
+          current_code: string | null
+          guest_id: string | null
+          host_id: string
+          id: string
+          last_activity: string
+          max_participants: number | null
+          problem_key: string | null
+          status: string
+          time_limit: number | null
+        }
+        Insert: {
+          closed_at?: string | null
+          code: string
+          created_at?: string
+          current_code?: string | null
+          guest_id?: string | null
+          host_id: string
+          id?: string
+          last_activity?: string
+          max_participants?: number | null
+          problem_key?: string | null
+          status?: string
+          time_limit?: number | null
+        }
+        Update: {
+          closed_at?: string | null
+          code?: string
+          created_at?: string
+          current_code?: string | null
+          guest_id?: string | null
+          host_id?: string
+          id?: string
+          last_activity?: string
+          max_participants?: number | null
+          problem_key?: string | null
+          status?: string
+          time_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_lobbies_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_lobbies_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "interview_lobbies_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_lobbies_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       interview_results: {
         Row: {
           ai_feedback: string | null
@@ -573,6 +647,107 @@ export type Database = {
         }
         Relationships: []
       }
+      lobby_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lobby_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lobby_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lobby_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lobby_messages_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "interview_lobbies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lobby_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lobby_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      lobby_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          left_at: string | null
+          lobby_id: string
+          role: string
+          status: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          lobby_id: string
+          role?: string
+          status?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          lobby_id?: string
+          role?: string
+          status?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lobby_participants_lobby_id_fkey"
+            columns: ["lobby_id"]
+            isOneToOne: false
+            referencedRelation: "interview_lobbies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lobby_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lobby_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profile_stats"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       problem_test_cases: {
         Row: {
           constraints: Json
@@ -683,25 +858,43 @@ export type Database = {
           ban_until: string | null
           created_at: string
           display_id: number
+          email: string | null
+          github_auto_push: boolean | null
+          github_repo: string | null
+          github_token: string | null
           id: string
+          requested_role: string | null
           status: string
           username: string
+          xp: number | null
         }
         Insert: {
           ban_until?: string | null
           created_at?: string
           display_id?: number
+          email?: string | null
+          github_auto_push?: boolean | null
+          github_repo?: string | null
+          github_token?: string | null
           id: string
+          requested_role?: string | null
           status?: string
           username: string
+          xp?: number | null
         }
         Update: {
           ban_until?: string | null
           created_at?: string
           display_id?: number
+          email?: string | null
+          github_auto_push?: boolean | null
+          github_repo?: string | null
+          github_token?: string | null
           id?: string
+          requested_role?: string | null
           status?: string
           username?: string
+          xp?: number | null
         }
         Relationships: []
       }
@@ -1023,6 +1216,7 @@ export type Database = {
           solved_count: number | null
           user_id: string | null
           username: string | null
+          xp: number | null
         }
         Relationships: []
       }
@@ -1054,7 +1248,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1182,7 +1376,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "moderator"],
     },
   },
 } as const

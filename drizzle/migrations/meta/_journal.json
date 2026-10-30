@@ -43,6 +43,13 @@
       "when": 1793379306653,
       "tag": "0005_agent_issues_messaging_202605",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793379356154,
+      "tag": "0006_lobbies_realtime_xp_202605b1",
+      "breakpoints": true
     }
   ]
 }
