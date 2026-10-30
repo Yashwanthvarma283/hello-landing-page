@@ -1,1 +1,3 @@
 project_id = "guahfuqzmtschfserlms"
+[functions.compiler-proxy]
+verify_jwt = false
