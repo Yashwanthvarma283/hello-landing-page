@@ -1,18 +1,33 @@
 import Editor, { OnMount } from '@monaco-editor/react';
 import { useTheme } from '@/lib/theme-context';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface CodeEditorProps {
   code: string;
   onChange: (value: string) => void;
+  practiceMode?: boolean;
 }
 
-const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
+const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) => {
   const { theme } = useTheme();
   const editorRef = useRef<any>(null);
 
+  useEffect(() => {
+    let disposed = false;
+    document.fonts.ready.then(() => {
+      if (!disposed) editorRef.current?.updateOptions({ fontFamily: "'JetBrains Mono', monospace" });
+    });
+    return () => { disposed = true; editorRef.current = null; };
+  }, []);
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    document.fonts.ready.then(() => {
+      if (editorRef.current === editor) {
+        monaco.editor.remeasureFonts();
+        editor.layout();
+      }
+    });
 
     // Add custom context menu actions
     editor.addAction({
@@ -101,23 +116,32 @@ const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
       options={{
         fontSize: 14,
         fontFamily: "'JetBrains Mono', monospace",
+        fontLigatures: false,
+        letterSpacing: 0,
+        lineHeight: 22,
+        automaticLayout: true,
         minimap: { enabled: false },
         lineNumbers: 'on',
-        autoClosingBrackets: 'always',
+        autoClosingBrackets: practiceMode ? 'never' : 'languageDefined',
+        autoClosingQuotes: practiceMode ? 'never' : 'languageDefined',
+        autoSurround: practiceMode ? 'never' : 'languageDefined',
         autoIndent: 'full',
-        formatOnPaste: true,
-        formatOnType: true,
+        formatOnPaste: false,
+        formatOnType: false,
         scrollBeyondLastLine: false,
         wordWrap: 'on',
         padding: { top: 12 },
         renderLineHighlight: 'line',
         bracketPairColorization: { enabled: true },
         smoothScrolling: true,
-        cursorBlinking: 'smooth',
-        cursorSmoothCaretAnimation: 'on',
+        cursorBlinking: 'blink',
+        cursorSmoothCaretAnimation: 'off',
         contextmenu: true,
         quickSuggestions: true,
         suggestOnTriggerCharacters: true,
+        acceptSuggestionOnEnter: practiceMode ? 'off' : 'on',
+        acceptSuggestionOnCommitCharacter: !practiceMode,
+        tabCompletion: 'off',
       }}
     />
   );
