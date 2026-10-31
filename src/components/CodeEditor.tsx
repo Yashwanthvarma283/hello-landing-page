@@ -5,9 +5,10 @@ import { useEffect, useRef } from 'react';
 interface CodeEditorProps {
   code: string;
   onChange: (value: string) => void;
+  practiceMode?: boolean;
 }
 
-const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
+const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) => {
   const { theme } = useTheme();
   const editorRef = useRef<any>(null);
 
@@ -115,9 +116,9 @@ const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
         automaticLayout: true,
         minimap: { enabled: false },
         lineNumbers: 'on',
-        autoClosingBrackets: 'never',
-        autoClosingQuotes: 'never',
-        autoSurround: 'never',
+        autoClosingBrackets: practiceMode ? 'never' : 'languageDefined',
+        autoClosingQuotes: practiceMode ? 'never' : 'languageDefined',
+        autoSurround: practiceMode ? 'never' : 'languageDefined',
         autoIndent: 'full',
         formatOnPaste: false,
         formatOnType: false,
@@ -132,8 +133,8 @@ const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
         contextmenu: true,
         quickSuggestions: true,
         suggestOnTriggerCharacters: true,
-        acceptSuggestionOnEnter: 'off',
-        acceptSuggestionOnCommitCharacter: false,
+        acceptSuggestionOnEnter: practiceMode ? 'off' : 'on',
+        acceptSuggestionOnCommitCharacter: !practiceMode,
         tabCompletion: 'off',
       }}
     />

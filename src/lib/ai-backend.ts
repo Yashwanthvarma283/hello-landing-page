@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './api';
 import { supabase } from '@/integrations/supabase/client';
+import { filterPracticeTests, type PracticeTestCase } from '../../supabase/functions/_shared/test-case-policy';
 
 export async function checkBackendStatus(): Promise<boolean> {
   try {
@@ -280,34 +281,15 @@ export async function generateTestCases(
   problemDescription?: string | null,
   existingTestCases?: Array<{ inputs: Record<string, string>; expected: string }> | null,
   paramNames?: string[] | null,
-): Promise<any[]> {
-  const prompt = `You are a LeetCode test case generator.
-Problem: ${problemTitle || problemId || 'Java DSA Problem'}
-Parameters: ${paramNames?.join(', ') || 'from method signature'}
-${problemDescription ? `Description:\n${problemDescription.slice(0, 1500)}` : ''}
-${code ? `Current Java Code:\n\`\`\`java\n${code.slice(0, 2000)}\n\`\`\`` : ''}
-
-Generate 3-5 tough, non-trivial test cases covering normal, boundary, and edge cases.
-Return ONLY a valid JSON array of objects with format:
-[
-  {
-    "inputs": { "${paramNames?.[0] || 'input'}": "sampleValue" },
-    "expected": "expectedOutput",
-    "category": "normal"
-  }
-]
-Do NOT return any markdown formatting outside the JSON array.`;
-
-  try {
-    const raw = await callPrimaryAI(prompt, "You are a test case generator. Respond ONLY with a JSON array.");
-    const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsed = JSON.parse(jsonStr);
-    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-  } catch (err) {
-    console.warn('AI generateTestCases via primary AI failed:', err);
-  }
-
-  return [];
+  context?: { constraints?: string[]; examples?: Array<{ input: string; output: string; explanation?: string }>; params?: Array<{ name: string; type: string }> },
+): Promise<PracticeTestCase[]> {
+  const { data, error } = await supabase.functions.invoke('generate-test-cases', {
+    body: { code, title: problemTitle || problemId, problemDescription,
+      existingTestCases: existingTestCases || [], paramNames: paramNames || [], ...context },
+  });
+  if (error) throw new Error(await getEdgeFunctionError(error));
+  if (data?.error) throw new Error(data.error);
+  return filterPracticeTests(Array.isArray(data?.testCases) ? data.testCases : [], existingTestCases || [], paramNames || []);
 }
 
 export async function detectPatterns(code: string, problemId?: string | null, problemDescription?: string): Promise<string> {
