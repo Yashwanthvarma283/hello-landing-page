@@ -1,6 +1,6 @@
 import Editor, { OnMount } from '@monaco-editor/react';
 import { useTheme } from '@/lib/theme-context';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface CodeEditorProps {
   code: string;
@@ -10,6 +10,14 @@ interface CodeEditorProps {
 const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
   const { theme } = useTheme();
   const editorRef = useRef<any>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    document.fonts.ready.then(() => {
+      if (!disposed) editorRef.current?.updateOptions({ fontFamily: "'JetBrains Mono', monospace" });
+    });
+    return () => { disposed = true; editorRef.current = null; };
+  }, []);
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
@@ -101,23 +109,32 @@ const CodeEditor = ({ code, onChange }: CodeEditorProps) => {
       options={{
         fontSize: 14,
         fontFamily: "'JetBrains Mono', monospace",
+        fontLigatures: false,
+        letterSpacing: 0,
+        lineHeight: 22,
+        automaticLayout: true,
         minimap: { enabled: false },
         lineNumbers: 'on',
-        autoClosingBrackets: 'always',
+        autoClosingBrackets: 'never',
+        autoClosingQuotes: 'never',
+        autoSurround: 'never',
         autoIndent: 'full',
-        formatOnPaste: true,
-        formatOnType: true,
+        formatOnPaste: false,
+        formatOnType: false,
         scrollBeyondLastLine: false,
         wordWrap: 'on',
         padding: { top: 12 },
         renderLineHighlight: 'line',
         bracketPairColorization: { enabled: true },
         smoothScrolling: true,
-        cursorBlinking: 'smooth',
-        cursorSmoothCaretAnimation: 'on',
+        cursorBlinking: 'blink',
+        cursorSmoothCaretAnimation: 'off',
         contextmenu: true,
         quickSuggestions: true,
         suggestOnTriggerCharacters: true,
+        acceptSuggestionOnEnter: 'off',
+        acceptSuggestionOnCommitCharacter: false,
+        tabCompletion: 'off',
       }}
     />
   );
