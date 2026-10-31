@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import CodeEditor from '@/components/CodeEditor';
+import ProblemStatement from '@/components/ProblemStatement';
+import { filterPracticeTests } from '../../supabase/functions/_shared/test-case-policy';
 import AIChatPanel from '@/components/AIChatPanel';
 import ConsolePanel, { ConsoleEntry } from '@/components/ConsolePanel';
 import TestCasePanel, { TestResult } from '@/components/TestCasePanel';
@@ -833,11 +835,13 @@ const ProblemWorkspace = () => {
 
   // Listen for AI dropdown trigger to generate test cases and add them to the Tests tab.
   const [isGeneratingTests, setIsGeneratingTests] = useState(false);
+  const testsInFlight = useRef(false);
   useEffect(() => {
     const handler = async (e: Event) => {
       const detailEvt = (e as CustomEvent).detail as string;
       if (detailEvt !== '__generate_tests__') return;
-      if (isGeneratingTests) return;
+      if (testsInFlight.current) return;
+      testsInFlight.current = true;
       setIsGeneratingTests(true);
       const tid = toast.loading('🧪 Generating test cases via AI…');
       try {
@@ -850,75 +854,34 @@ const ProblemWorkspace = () => {
         const problemTitle = roadmapProblem?.title || key || '';
         const paramNames = (detail.params || []).map(p => p.name);
         
-        const getSignature = (inputs: Record<string, string>) => {
-          const sortedKeys = Object.keys(inputs).sort();
-          const normalized: Record<string, string> = {};
-          sortedKeys.forEach(k => { normalized[k] = String(inputs[k]).trim(); });
-          return JSON.stringify(normalized);
-        };
-
-        const existingSignatures = new Set(
-          currentTestCases.map(tc => getSignature(tc.inputs))
+        const generated = await generateTestCases(
+          detail.starterCode, key || null, problemTitle, detail.description,
+          currentTestCases, paramNames,
+          { constraints: detail.constraints, examples: detail.examples, params: detail.params },
         );
-
-        // Enhance description with explicit AI instructions for uniqueness and accuracy
-        const enhancedDescription = `${detail.description}\n\n` +
-          `IMPORTANT FOR AI:\n` +
-          `1. Generate 3-5 high-quality, UNIQUE test cases.\n` +
-          `2. Include edge cases (empty inputs, large values, minimum/maximum values).\n` +
-          `3. Match parameter names EXACTLY: ${paramNames.join(', ')}.\n` +
-          `4. DO NOT generate any inputs already provided in the existingTestCases list.\n` +
-          `5. Ensure the 'expected' output is 100% correct based on the problem logic.`;
-
-        const generated = await generateTestCases(code, key || null, problemTitle, enhancedDescription, currentTestCases, paramNames);
-
-        const normalized = (Array.isArray(generated) ? generated : [])
-          .map((t: any) => {
-            const inputs: Record<string, string> =
-              t.inputs && typeof t.inputs === 'object'
-                ? Object.fromEntries(Object.entries(t.inputs).map(([k, v]) => [k, String(v)]))
-                : {};
-            const expected = String(t.expectedOutput ?? t.expected ?? '').trim();
-            
-            // Validation: Ensure inputs match problem parameters
-            const validParamNames = (detail.params || []).map(p => p.name);
-            if (validParamNames.length > 0) {
-              const inputKeys = Object.keys(inputs);
-              // If the AI generated keys that aren't in our params, it's likely a hallucination from another problem
-              const hasMismatch = inputKeys.some(k => !validParamNames.includes(k));
-              if (hasMismatch) return null;
-              
-              // Also ensure all required params are present
-              const hasAllParams = validParamNames.every(name => inputKeys.includes(name));
-              if (!hasAllParams) return null;
-            }
-
-            return Object.keys(inputs).length > 0 && expected ? { inputs, expected } : null;
-          })
-          .filter(Boolean) as { inputs: Record<string, string>; expected: string }[];
-
-        // Deduplicate: remove any that match existing test case input signatures
-        const unique = normalized.filter(tc => !existingSignatures.has(getSignature(tc.inputs)));
+        const unique = filterPracticeTests(generated, currentTestCases, paramNames);
 
         if (unique.length === 0) {
-          if (normalized.length > 0) {
-            toast.error('AI generated test cases, but they already exist in your list.', { id: tid });
-          } else {
-            toast.error('AI failed to generate valid test cases for this problem. Try again.', { id: tid });
-          }
+          toast.error('No new valid easy/medium tests were found. Try again.', { id: tid });
         } else {
-          setDetail(prev => ({ ...prev, testCases: [...(prev.testCases || []), ...unique] }));
+          setDetail(prev => {
+            const fresh = filterPracticeTests(unique, prev.testCases || [], paramNames);
+            const updated = { ...prev, testCases: [...(prev.testCases || []), ...fresh] };
+            if (key) setCachedDetail(key, updated);
+            return updated;
+          });
           toast.success(`✅ Added ${unique.length} new AI test case${unique.length === 1 ? '' : 's'} to the Tests tab.`, { id: tid });
           setBottomTab('description');
         }
       } catch (err: any) {
         toast.error(err?.message || 'Failed to generate test cases', { id: tid });
       }
+      testsInFlight.current = false;
       setIsGeneratingTests(false);
     };
     window.addEventListener('trigger-explain', handler);
     return () => window.removeEventListener('trigger-explain', handler);
-  }, [code, key, isGeneratingTests, detail.testCases, roadmapProblem]);
+  }, [key, detail, roadmapProblem]);
 
 
   const addConsoleEntry = (type: ConsoleEntry['type'], text: string) => {
@@ -1583,60 +1546,8 @@ const ProblemWorkspace = () => {
                 </div>
               )}
 
-              <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:text-foreground/90 [&_li]:text-foreground/90">
-                <ReactMarkdown>{detail.description}</ReactMarkdown>
-              </div>
+              <ProblemStatement detail={detail} />
 
-              {detail.examples.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">Examples</h3>
-                  {detail.examples.map((ex, i) => (
-                    <div key={i} className="rounded-xl border border-panel-border bg-secondary/20 p-4 space-y-3">
-                      <p className="text-[10px] font-bold uppercase text-muted-foreground">Example {i + 1}</p>
-                      <div className="font-mono text-[11px] leading-relaxed">
-                        <p className="mb-1.5"><span className="text-muted-foreground">Input:</span> <code className="text-foreground bg-foreground/5 px-1 rounded">{ex.input}</code></p>
-                        <p><span className="text-muted-foreground">Output:</span> <code className="font-bold text-emerald-600 bg-emerald-500/5 px-1 rounded">{ex.output}</code></p>
-                        {ex.explanation && (
-                          <div className="mt-2.5 pt-2.5 border-t border-panel-border/50 text-muted-foreground italic flex gap-2">
-                            <Lightbulb className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-                            <span>{ex.explanation}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {(detail as EnhancedDetail).constraints && (detail as EnhancedDetail).constraints!.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">Constraints</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(detail as EnhancedDetail).constraints!.map((c, i) => (
-                      <code key={i} className="bg-secondary/40 border border-panel-border px-2 py-1 rounded text-[10px] font-mono text-foreground/80">
-                        {c}
-                      </code>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {(detail as EnhancedDetail).hints && (detail as EnhancedDetail).hints!.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground/80">Hints</h3>
-                  {(detail as EnhancedDetail).hints!.map((h, i) => (
-                    <details key={i} className="group border border-panel-border rounded-xl bg-secondary/10 overflow-hidden">
-                      <summary className="px-4 py-3 text-[11px] font-bold text-muted-foreground cursor-pointer flex items-center justify-between group-open:bg-secondary/20">
-                        Hint {i + 1}
-                        <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-                      </summary>
-                      <div className="px-4 py-3 text-xs leading-relaxed text-foreground/90 border-t border-panel-border/50">
-                        {h}
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              )}
             </div>
           </ScrollArea>
         )}
@@ -1670,24 +1581,12 @@ const ProblemWorkspace = () => {
               </div>
             </div>
             <div className="flex-1 relative">
-              {APPROACHES.map(approach => (
-                <div 
-                  key={approach.key} 
-                  className="absolute inset-0"
-                  style={{ 
-                    visibility: activeApproach === approach.key ? 'visible' : 'hidden',
-                    opacity: activeApproach === approach.key ? 1 : 0,
-                    pointerEvents: activeApproach === approach.key ? 'auto' : 'none',
-                    zIndex: activeApproach === approach.key ? 1 : 0
-                  }}
-                >
-                  <CodeEditor 
-                    key={`${key}-${approach.key}-${generationCount}`}
-                    code={codes[approach.key]} 
-                    onChange={(val) => setCodes(prev => ({ ...prev, [approach.key]: val }))} 
-                  />
-                </div>
-              ))}
+              <CodeEditor
+                key={`${key}-${activeApproach}-${generationCount}`}
+                code={code}
+                onChange={setCode}
+                practiceMode
+              />
             </div>
           </div>
         )}
@@ -1985,7 +1884,7 @@ const ProblemWorkspace = () => {
               </div>
             </div>
             <ScrollArea className="flex-1">
-              <div className="p-4 space-y-4">
+              <div className="p-5 space-y-6">
                 <div>
                   <h2 className="text-lg font-bold text-foreground">{roadmapProblem.title}</h2>
                   <div className="flex items-center gap-2 mt-1">
@@ -2009,87 +1908,15 @@ const ProblemWorkspace = () => {
                   </div>
                 )}
 
-                <div className="prose prose-sm max-w-none dark:prose-invert [&_p]:text-foreground [&_li]:text-foreground">
-                  <ReactMarkdown>{detail.description}</ReactMarkdown>
-                </div>
+                <ProblemStatement detail={detail} />
 
-                {detail.examples.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Examples</h3>
-                    {detail.examples.map((ex, i) => (
-                      <div key={i} className="rounded-lg border border-panel-border bg-secondary/30 p-3 space-y-1">
-                        <p className="text-xs font-semibold text-muted-foreground">Example {i + 1}:</p>
-                        <div className="font-mono text-xs">
-                          <p><span className="text-muted-foreground">Input:</span> <span className="text-foreground">{ex.input}</span></p>
-                          <p><span className="text-muted-foreground">Output:</span> <span className="font-semibold text-foreground">{ex.output}</span></p>
-                          {ex.explanation && <p className="text-muted-foreground mt-1">💡 {ex.explanation}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {(detail as EnhancedDetail).constraints && (detail as EnhancedDetail).constraints!.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Constraints</h3>
-                    <ul className="space-y-1">
-                      {(detail as EnhancedDetail).constraints!.map((c, i) => (
-                        <li key={i} className="text-xs text-foreground font-mono flex items-start gap-2">
-                          <span className="text-muted-foreground mt-0.5">•</span>
-                          <code className="bg-secondary/50 px-1.5 py-0.5 rounded text-[11px]">{c}</code>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {(detail as EnhancedDetail).hints && (detail as EnhancedDetail).hints!.length > 0 && (
-                  <details className="group">
-                    <summary className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                      💡 Hints ({(detail as EnhancedDetail).hints!.length})
-                    </summary>
-                    <div className="mt-2 space-y-2">
-                      {(detail as EnhancedDetail).hints!.map((h, i) => (
-                        <div key={i} className="rounded border border-panel-border bg-primary/5 p-2 text-xs text-foreground">
-                          <span className="font-semibold text-primary">Hint {i + 1}:</span> {h}
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                )}
-
-                {(detail as EnhancedDetail).approach && (
-                  <details className="group">
-                    <summary className="text-xs font-bold uppercase tracking-wider text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
-                      🧠 Approach & Complexity
-                    </summary>
-                    <div className="mt-2 rounded border border-panel-border bg-secondary/20 p-3 text-xs text-foreground">
-                      <ReactMarkdown>{(detail as EnhancedDetail).approach!}</ReactMarkdown>
-                    </div>
-                  </details>
-                )}
-
-                {detail.testCases.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Built-in Test Cases</h3>
-                    {detail.testCases.map((tc, i) => (
-                      <div key={i} className="rounded border border-panel-border bg-secondary/20 p-2 font-mono text-[11px] space-y-0.5">
-                        <p className="font-semibold text-muted-foreground">Test {i + 1}:</p>
-                        {Object.entries(tc.inputs).map(([k, v]) => (
-                          <p key={k}><span className="text-muted-foreground">{k}</span> = <span className="text-foreground">{v}</span></p>
-                        ))}
-                        <p><span className="text-muted-foreground">Expected:</span> <span className="text-success font-semibold">{tc.expected}</span></p>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </ScrollArea>
           </div>
         )}
 
         {/* Center: Code Editor + Bottom */}
-        <div className="hidden md:flex flex-1 flex-col overflow-hidden">
+        <div className="hidden md:flex min-w-0 flex-1 flex-col overflow-hidden">
           {!showDescription && (
             <Button variant="ghost" size="sm" onClick={() => setShowDescription(true)} className="absolute z-10 left-1 top-14 h-6 text-[10px]">
               📄 Show
@@ -2132,24 +1959,12 @@ const ProblemWorkspace = () => {
           </div>
 
           <div className="flex-1 overflow-hidden relative">
-            {APPROACHES.map(approach => (
-              <div 
-                key={approach.key} 
-                className="absolute inset-0"
-                style={{ 
-                  visibility: activeApproach === approach.key ? 'visible' : 'hidden',
-                  opacity: activeApproach === approach.key ? 1 : 0,
-                  pointerEvents: activeApproach === approach.key ? 'auto' : 'none',
-                  zIndex: activeApproach === approach.key ? 1 : 0
-                }}
-              >
-                <CodeEditor 
-                  key={`${key}-${approach.key}-${generationCount}`}
-                  code={codes[approach.key]} 
-                  onChange={(val) => setCodes(prev => ({ ...prev, [approach.key]: val }))} 
-                />
-              </div>
-            ))}
+            <CodeEditor
+                key={`${key}-${activeApproach}-${generationCount}`}
+                code={code}
+                onChange={setCode}
+                practiceMode
+              />
           </div>
 
           <div onMouseDown={handleDividerMouseDown} className="resize-handle h-1 cursor-row-resize border-t border-panel-border hover:bg-primary/40 transition-colors" />
@@ -2241,7 +2056,7 @@ const ProblemWorkspace = () => {
               )}
               {bottomTab === 'analysis' && (
                 <ScrollArea className="h-full">
-                  <div className="p-4 space-y-4">
+                  <div className="p-5 space-y-6">
                     {isAnalyzing ? (
                       <div className="flex flex-col items-center justify-center py-10 gap-3">
                         <Loader2 className="h-6 w-6 animate-spin text-primary" />
