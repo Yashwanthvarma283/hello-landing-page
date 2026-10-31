@@ -287,7 +287,13 @@ export async function generateTestCases(
     body: { code, title: problemTitle || problemId, problemDescription,
       existingTestCases: existingTestCases || [], paramNames: paramNames || [], ...context },
   });
-  if (error) throw new Error(await getEdgeFunctionError(error));
+  if (error) {
+    let message = error.message;
+    if (error.context instanceof Response) {
+      try { message = (await error.context.json()).error || message; } catch { /* retain original error */ }
+    }
+    throw new Error(message);
+  }
   if (data?.error) throw new Error(data.error);
   return filterPracticeTests(Array.isArray(data?.testCases) ? data.testCases : [], existingTestCases || [], paramNames || []);
 }
@@ -467,7 +473,7 @@ export async function getExtraInsights(code: string, type: string, problemId?: s
   }
   if (type === 'testcases') {
     const tests = await generateTestCases(code, problemId);
-    return `### Generated Test Cases\n\n${tests.map((t, i) => `**Case ${i+1} (${t.category})**\n- Inputs: \`${JSON.stringify(t.inputs)}\`\n- Expected: \`${t.expectedOutput || t.expected}\``).join('\n\n')}`;
+    return `### Generated Test Cases\n\n${tests.map((t, i) => `**Case ${i+1} (${t.category})**\n- Inputs: \`${JSON.stringify(t.inputs)}\`\n- Expected: \`${t.expected}\``).join('\n\n')}`;
   }
   return explainCode(code, problemId);
 }

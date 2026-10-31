@@ -319,8 +319,8 @@ const Dashboard = () => {
       const newCases: DbTestCase[] = [];
       for (const tc of generated) {
         // Handle both API response formats
-        const inputs = tc.inputs || tc.input || {};
-        const expected = tc.expectedOutput || tc.expected || '';
+        const inputs = tc.inputs;
+        const expected = tc.expected;
         
         const saved = await insertTestCase(userId, activeProblem.id, inputs, expected);
         newCases.push(saved);
