@@ -22,6 +22,12 @@ const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) =
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    document.fonts.ready.then(() => {
+      if (editorRef.current === editor) {
+        monaco.editor.remeasureFonts();
+        editor.layout();
+      }
+    });
 
     // Add custom context menu actions
     editor.addAction({

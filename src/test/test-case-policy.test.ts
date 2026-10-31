@@ -24,6 +24,9 @@ describe('DSA practice test rules', () => {
   it('permits valid empty string outputs', () => {
     expect(filterPracticeTests([{ inputs: { s: 'a' }, expected: '', difficulty: 'easy' }], [], ['s'])).toHaveLength(1);
   });
+  it('preserves string whitespace because it can change the answer', () => {
+    expect(filterPracticeTests([{ inputs: { s: ' a ' }, expected: '3', difficulty: 'easy' }], [{ inputs: { s: 'a' } }], ['s'])).toHaveLength(1);
+  });
   it('supports repeated generation and sends the entire question and all existing tests every time', async () => {
     invoke.mockResolvedValueOnce({ data: { testCases: [test('[4,5]')] }, error: null })
       .mockResolvedValueOnce({ data: { testCases: [test('[4, 5]'), test('[1,8]')] }, error: null });

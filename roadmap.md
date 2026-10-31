@@ -4,7 +4,7 @@
 - [x] Add routing regression tests, deploy affected functions, and verify authenticated usage.
 
 # DSA module quality
-- [ ] Fix approach editor cursor alignment and unintended typing.
-- [ ] Improve generated question spacing and hierarchy.
-- [ ] Enforce relevant, nonrepeated easy/medium AI tests with repeat generation.
-- [ ] Run regression tests and verify the authenticated workspace flow.
+- [x] Fix approach editor cursor alignment and unintended typing.
+- [x] Improve generated question spacing and hierarchy.
+- [x] Enforce relevant, nonrepeated easy/medium AI tests with repeat generation.
+- [x] Run regression tests and verify the authenticated workspace flow.

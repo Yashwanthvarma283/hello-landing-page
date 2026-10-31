@@ -297,7 +297,7 @@ const ProblemWorkspace = () => {
     
     // STEP 1: Calculate the fresh initial detail for the NEW key immediately.
     // This prevents using stale detail.starterCode from the previous problem.
-    const initialDetail = getProblemDetail(key, roadmapProblem?.title || 'Problem', roadmapProblem?.difficulty || 'Medium');
+    const initialDetail = getCachedDetail(key) || getProblemDetail(key, roadmapProblem?.title || 'Problem', roadmapProblem?.difficulty || 'Medium');
     const placeholder = initialDetail.starterCode || '';
 
     // STEP 2: Synchronously reset all problem-specific state
