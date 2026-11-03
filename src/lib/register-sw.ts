@@ -59,6 +59,22 @@ export function registerOfflineSupport(): void {
   }
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register(SW_URL, { scope: "/" }).catch(() => {});
+    let refreshing = false;
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (!hadController || refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+
+    navigator.serviceWorker.register(SW_URL, { scope: "/", updateViaCache: "none" })
+      .then((registration) => {
+        void registration.update().catch(() => {});
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            void registration.update().catch(() => {});
+          }
+        });
+      }).catch(() => {});
   });
 }
