@@ -6,6 +6,8 @@ import { signUp, signIn, supabase } from '@/lib/supabase';
 import { useUser } from '@/lib/user-context';
 import { useNavigate } from 'react-router-dom';
 import logoMark from '@/assets/javaarena-logo.png';
+import { EmailConfirmationNotice } from '@/components/EmailConfirmationNotice';
+import { isEmailUnconfirmed } from '@/lib/auth-errors';
 
 const Login = () => {
   const { enterGuestMode } = useUser();
@@ -18,9 +20,11 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
 
   const handleSubmit = async () => {
     setError('');
+    setConfirmationEmail('');
     if (!email.trim()) { setError('Email is required'); return; }
 
     if (mode === 'forgot') {
@@ -57,7 +61,8 @@ const Login = () => {
         await signIn(email.trim(), password);
       }
     } catch (err: any) {
-      setError(err?.message || 'Authentication failed. Please try again.');
+      if (isEmailUnconfirmed(err)) setConfirmationEmail(email.trim());
+      else setError(err?.message || 'Authentication failed. Please try again.');
     }
     setLoading(false);
   };
@@ -105,6 +110,7 @@ const Login = () => {
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Please check your email to verify your account. After verification, an admin will review and approve your access.
               </p>
+              <div className="mt-4"><EmailConfirmationNotice key={email.trim()} email={email.trim()} /></div>
               <button
                 onClick={() => { setSignupSuccess(false); setMode('login'); }}
                 className="mt-3 text-xs font-medium text-foreground hover:underline"
@@ -151,6 +157,9 @@ const Login = () => {
                 <div className="mb-4 rounded-lg bg-destructive/10 px-3 py-2">
                   <p className="text-xs text-destructive">{error}</p>
                 </div>
+              )}
+              {mode === 'login' && confirmationEmail && confirmationEmail === email.trim() && (
+                <EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} />
               )}
 
               <Button onClick={handleSubmit} className="w-full h-11 rounded-xl text-[14px] font-semibold tracking-wide transition-all duration-200" disabled={loading}>

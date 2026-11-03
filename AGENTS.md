@@ -6,3 +6,4 @@
 - AI calls that used to hit the Lovable gateway use `supabase/functions/_shared/ai-compat.ts` (`aiGatewayFetch`), which routes through ai-pool and turns forced tool-calls into JSON mode. Why: the external backend has no gateway key, and JSON mode is more reliable than tool calling across providers.
 - DSA practice tests use the dedicated generation function with semantic review and the shared test-case policy on server and client; generated batches do not replace the shared question cache. Why: validate question relevance and prevent stale or duplicate test inputs.
 - Mobile and desktop DSA questions share ProblemStatement, and each approach mounts only its active editor. Why: consistent readable statements and isolation of typing state.
+- Existing login screens share EmailConfirmationNotice for unconfirmed-email recovery; account approval never bypasses email verification. Why: users can request a new confirmation link while preserving ownership checks.

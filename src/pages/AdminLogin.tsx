@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { EmailConfirmationNotice } from '@/components/EmailConfirmationNotice';
+import { isEmailUnconfirmed } from '@/lib/auth-errors';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -11,9 +13,11 @@ const AdminLogin = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
 
   const handleSubmit = async () => {
     setError('');
+    setConfirmationEmail('');
     if (!email.trim()) { setError('Email is required'); return; }
     if (!password.trim()) { setError('Password is required'); return; }
 
@@ -25,7 +29,7 @@ const AdminLogin = () => {
         password,
       });
 
-      if (authError) throw new Error(authError.message);
+      if (authError) throw authError;
       if (!authData.user) throw new Error('Login failed');
 
       // Check if user has admin role
@@ -44,7 +48,8 @@ const AdminLogin = () => {
 
       navigate('/admin');
     } catch (err: any) {
-      setError(err?.message || 'Authentication failed.');
+      if (isEmailUnconfirmed(err)) setConfirmationEmail(email.trim());
+      else setError(err?.message || 'Authentication failed.');
     }
     setLoading(false);
   };
@@ -85,6 +90,9 @@ const AdminLogin = () => {
             <div className="mb-4 rounded-lg bg-destructive/10 px-3 py-2">
               <p className="text-xs text-destructive">{error}</p>
             </div>
+          )}
+          {confirmationEmail && confirmationEmail === email.trim() && (
+            <EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} />
           )}
 
           <Button onClick={handleSubmit} className="w-full h-10 rounded-xl text-sm font-medium" disabled={loading}>
