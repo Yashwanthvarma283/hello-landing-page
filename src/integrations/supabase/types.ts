@@ -1720,6 +1720,7 @@ export type Database = {
         Args: { _claim_key?: string; _rule_key: string; _user_id: string }
         Returns: number
       }
+      can_view_profile: { Args: { _profile_id: string }; Returns: boolean }
       consume_extra_hint: { Args: never; Returns: boolean }
       consume_streak_restore: { Args: { _gap_date: string }; Returns: Json }
       equip_item: { Args: { _item_slug: string }; Returns: Json }
@@ -1748,6 +1749,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_lobby_member: {
+        Args: { _lobby_id: string; _user_id: string }
         Returns: boolean
       }
       purchase_item: { Args: { _item_slug: string }; Returns: Json }
