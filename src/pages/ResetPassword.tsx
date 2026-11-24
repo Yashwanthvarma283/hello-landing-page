@@ -13,24 +13,35 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true);
 
   useEffect(() => {
-    // Check for recovery token in URL hash
-    const hash = window.location.hash;
-    if (hash.includes('type=recovery')) {
-      setIsRecovery(true);
-    }
-
+    let active = true;
+    const recoveryHash = new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery';
+    const validateRecovery = async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (active) {
+        setIsRecovery(!error && !!data.user);
+        setCheckingLink(false);
+      }
+    };
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
-        setIsRecovery(true);
+        // Defer auth calls until the auth event's internal lock is released.
+        setTimeout(() => { if (active) void validateRecovery(); }, 0);
       }
     });
-
-    return () => subscription.unsubscribe();
+    // getSession waits for URL token processing; the user is then validated remotely.
+    supabase.auth.getSession().then(() => {
+      if (!active) return;
+      if (recoveryHash) void validateRecovery();
+      else setCheckingLink(false);
+    });
+    return () => { active = false; subscription.unsubscribe(); };
   }, []);
 
   const handleReset = async () => {
+    if (!isRecovery || checkingLink || loading) return;
     setError('');
     if (!password) { setError('Password is required'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
@@ -40,13 +51,17 @@ const ResetPassword = () => {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+      await supabase.auth.signOut();
       setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {
       setError(err?.message || 'Failed to reset password');
     }
     setLoading(false);
   };
+
+  if (checkingLink) {
+    return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 aria-label="Checking reset link" className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
 
   if (!isRecovery) {
     return (
@@ -65,7 +80,8 @@ const ResetPassword = () => {
         <div className="text-center animate-fade-in">
           <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-success" />
           <h2 className="text-lg font-bold text-foreground">Password Reset!</h2>
-          <p className="text-sm text-muted-foreground mt-1">Redirecting to the app...</p>
+          <p className="text-sm text-muted-foreground mt-1">Sign in with your new password.</p>
+          <Button onClick={() => navigate('/')} className="mt-4">Back to Sign In</Button>
         </div>
       </div>
     );

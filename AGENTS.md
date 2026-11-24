@@ -8,3 +8,5 @@
 - Mobile and desktop DSA questions share ProblemStatement, and each approach mounts only its active editor. Why: consistent readable statements and isolation of typing state.
 - Existing login screens share EmailConfirmationNotice for unconfirmed-email recovery; account approval never bypasses email verification. Why: users can request a new confirmation link while preserving ownership checks.
 - Production service workers check updates without HTTP caching and reload controlled tabs when a new worker takes over; HTML uses network-first routing rather than a precached navigation fallback. Why: returning users must receive current sign-in messages instead of a pinned app shell.
+- Google sign-in uses the generated Lovable auth helper with a public same-origin return URL, then the existing profile approval gate. Why: preview popups and published redirects must share the same account restrictions.
+- Password recovery validates the recovery session with getUser before allowing updateUser, then signs out for a fresh login. Why: invalid links must not expose a password form and recovery must not skip normal account checks.

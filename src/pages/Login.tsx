@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import logoMark from '@/assets/javaarena-logo.png';
 import { EmailConfirmationNotice } from '@/components/EmailConfirmationNotice';
 import { isEmailUnconfirmed } from '@/lib/auth-errors';
+import { lovable } from '@/integrations/lovable/index';
 
 const Login = () => {
   const { enterGuestMode } = useUser();
@@ -18,9 +19,29 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+
+  const handleGoogle = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: 'select_account' },
+      });
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      // The shared user context checks approval after the helper sets the session.
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setError('');
@@ -121,10 +142,27 @@ const Login = () => {
           ) : resetSent ? (
             <div className="rounded-xl bg-success/10 p-5 text-center">
               <p className="text-sm font-medium text-success">Reset link sent!</p>
-              <p className="mt-1.5 text-xs text-muted-foreground">Check your email for a password reset link.</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">If an account exists for this email, you’ll receive a password reset link. Check your inbox and spam folder.</p>
+              <Button variant="link" onClick={() => { setMode('login'); setResetSent(false); setError(''); }} className="mt-3">Back to Sign In</Button>
             </div>
           ) : (
             <>
+              {mode !== 'forgot' && (
+                <>
+                  <Button variant="outline" onClick={handleGoogle} disabled={loading || googleLoading} className="google-auth-button mb-4 h-11 w-full rounded-xl">
+                    {googleLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : (
+                      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                        <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
+                        <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z" />
+                      </svg>
+                    )}
+                    {googleLoading ? 'Connecting…' : mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
+                  </Button>
+                  <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or with email<span className="h-px flex-1 bg-border" /></div>
+                </>
+              )}
               {mode === 'signup' && (
                 <div className="mb-4">
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</label>
@@ -162,7 +200,7 @@ const Login = () => {
                 <EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} />
               )}
 
-              <Button onClick={handleSubmit} className="w-full h-11 rounded-xl text-[14px] font-semibold tracking-wide transition-all duration-200" disabled={loading}>
+              <Button onClick={handleSubmit} className="w-full h-11 rounded-xl text-[14px] font-semibold tracking-wide transition-all duration-200" disabled={loading || googleLoading}>
                 {loading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {mode === 'forgot' ? 'Sending...' : mode === 'signup' ? 'Creating...' : 'Signing In...'}</>
                 ) : (
