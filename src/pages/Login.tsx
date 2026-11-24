@@ -89,21 +89,22 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <div className={`w-full max-w-[400px] animate-in-up ${mode !== 'forgot' ? 'min-[600px]:max-w-[520px]' : ''}`}>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 min-[600px]:h-dvh min-[600px]:min-h-0 min-[600px]:overflow-hidden min-[600px]:py-4 min-[1024px]:px-10">
+      <div className="w-full max-w-[400px] animate-in-up min-[600px]:grid min-[600px]:max-w-[1100px] min-[600px]:grid-cols-2 min-[600px]:items-center min-[600px]:gap-8 min-[1024px]:gap-16">
         {/* Logo */}
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300">
-            <img src={logoMark} alt="JavaLabs logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
+        <div className="mb-10 text-center min-[600px]:mb-0">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300 min-[600px]:h-24 min-[600px]:w-24">
+            <img src={logoMark} alt="JavaLabs logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0 min-[600px]:h-14 min-[600px]:w-14" />
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground">JavaLabs</h1>
           <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">Your AI-powered DSA practice environment</p>
         </div>
 
         {/* Card */}
-        <div className="surface-elevated p-8 rounded-2xl">
+        <div className="min-w-0">
+        <div className="surface-elevated p-8 rounded-2xl min-[600px]:p-4 min-[1024px]:p-6">
           {/* Feature badges */}
-          <div className="mb-8 flex items-center justify-center gap-3 text-[11px] font-medium tracking-wide text-muted-foreground">
+          <div className="mb-8 flex items-center justify-center gap-3 text-[11px] font-medium tracking-wide text-muted-foreground min-[600px]:mb-4 min-[600px]:gap-2">
             <span className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1">
               <Terminal className="h-3 w-3" /> Java
             </span>
@@ -115,7 +116,7 @@ const Login = () => {
             </span>
           </div>
 
-          <h2 className="mb-6 text-center text-[17px] font-semibold tracking-tight text-foreground">
+          <h2 className="mb-6 text-center text-[17px] font-semibold tracking-tight text-foreground min-[600px]:mb-4">
             {mode === 'forgot' ? 'Reset Password' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
           </h2>
 
@@ -149,7 +150,7 @@ const Login = () => {
             <>
               {mode !== 'forgot' && (
                 <>
-                  <Button variant="outline" onClick={handleGoogle} disabled={loading || googleLoading} className="google-auth-button mb-4 h-11 w-full rounded-xl">
+                  <Button variant="outline" onClick={handleGoogle} disabled={loading || googleLoading} className="google-auth-button mb-4 h-11 w-full rounded-xl min-[600px]:mb-3 min-[600px]:h-10">
                     {googleLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : (
                       <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
                         <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
@@ -160,11 +161,11 @@ const Login = () => {
                     )}
                     {googleLoading ? 'Connecting…' : mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
                   </Button>
-                  <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground"><span className="h-px flex-1 bg-border" />or with email<span className="h-px flex-1 bg-border" /></div>
+                  <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground min-[600px]:mb-3"><span className="h-px flex-1 bg-border" />or with email<span className="h-px flex-1 bg-border" /></div>
                 </>
               )}
               {mode === 'signup' && (
-                <div className="mb-4">
+                <div className="mb-4 min-[600px]:mb-3">
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</label>
                   <div className="relative">
                     <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -173,7 +174,7 @@ const Login = () => {
                 </div>
               )}
 
-              <div className="mb-4">
+              <div className="mb-4 min-[600px]:mb-3">
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -182,7 +183,7 @@ const Login = () => {
               </div>
 
               {mode !== 'forgot' && (
-                <div className="mb-6">
+                <div className="mb-6 min-[600px]:mb-4">
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
@@ -224,7 +225,7 @@ const Login = () => {
                 </Button>
               )}
 
-              <div className="mt-5 flex flex-col items-center gap-2">
+              <div className="mt-5 flex flex-col items-center gap-2 min-[600px]:mt-3">
                 {mode === 'login' && (
                   <button onClick={() => { setMode('forgot'); setError(''); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors" disabled={loading}>
                     Forgot password?
@@ -251,9 +252,10 @@ const Login = () => {
           )}
         </div>
 
-        <p className="mt-5 text-center text-[11px] text-muted-foreground/60">
+        <p className="mt-5 text-center text-[11px] text-muted-foreground/60 min-[600px]:mt-3">
           Your problems and solutions are saved securely in the cloud.
         </p>
+        </div>
       </div>
     </div>
   );
