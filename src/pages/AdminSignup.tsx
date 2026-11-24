@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { AuthLayout, AuthCard, AuthHeading } from '@/components/auth/AuthLayout';
+import { AuthField } from '@/components/auth/AuthField';
 import { toast } from 'sonner';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft, User, Mail, Lock, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminSignup() {
@@ -55,75 +55,27 @@ export default function AdminSignup() {
     }
   };
 
+  const set = (k: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => setFormData(f => ({ ...f, [k]: e.target.value }));
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-8 rounded-xl border border-border bg-card p-8 shadow-lg">
-        <div className="flex flex-col items-center space-y-2 text-center">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Shield className="h-6 w-6 text-primary" />
+    <AuthLayout mark={<Shield className="h-8 w-8 text-background min-[600px]:h-11 min-[600px]:w-11" />} title="Admin Portal" tagline="Request administrator access to JavaLabs"
+      highlights={['Requests are reviewed by an existing admin', 'Confirm your email before signing in', 'Access is granted only after approval']}>
+      <AuthCard>
+        <button type="button" onClick={() => navigate('/admin-login')} className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to admin sign in
+        </button>
+        <AuthHeading title="Request admin access" subtitle="Tell us who you are. An admin will review your request." />
+        <form onSubmit={handleSubmit}>
+          <AuthField label="Full name" icon={User} value={formData.name} onChange={set('name')} placeholder="Your name" autoComplete="name" required disabled={loading} />
+          <AuthField label="Work email" icon={Mail} type="email" value={formData.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email" required disabled={loading} />
+          <div className="grid gap-x-3 min-[1024px]:grid-cols-2">
+            <AuthField label="Password" icon={Lock} type="password" value={formData.password} onChange={set('password')} placeholder="Min. 6 characters" autoComplete="new-password" required disabled={loading} />
+            <AuthField label="Confirm password" icon={Lock} type="password" value={formData.confirmPassword} onChange={set('confirmPassword')} placeholder="Repeat password" autoComplete="new-password" required disabled={loading} />
           </div>
-          <h2 className="text-2xl font-bold tracking-tight">Admin Registration</h2>
-          <p className="text-sm text-muted-foreground">Register for an administrator account. Your request will be reviewed.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              placeholder="John Doe"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Work Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="admin@example.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-            />
-          </div>
-
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Submitting...' : 'Request Access'}
+          <Button type="submit" className="mt-1 h-11 w-full rounded-xl text-[14px] font-semibold min-[600px]:h-10" disabled={loading}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</> : 'Submit request'}
           </Button>
-
-          <div className="text-center text-sm">
-            <button
-              type="button"
-              onClick={() => navigate('/admin-login')}
-              className="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              <ArrowLeft className="h-3 w-3" /> Already an admin? Sign in
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }

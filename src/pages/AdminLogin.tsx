@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Loader2, Mail, Lock, ArrowLeft, ArrowRight, Shield, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AuthLayout, AuthCard, AuthHeading, AuthAlert } from '@/components/auth/AuthLayout';
+import { AuthField } from '@/components/auth/AuthField';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { EmailConfirmationNotice } from '@/components/EmailConfirmationNotice';
@@ -54,70 +55,36 @@ const AdminLogin = () => {
     setLoading(false);
   };
 
+  const mark = <Shield className="h-8 w-8 text-background min-[600px]:h-11 min-[600px]:w-11" />;
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm animate-fade-in">
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 border border-destructive/20">
-            <Shield className="h-7 w-7 text-destructive" />
-          </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">Admin Portal</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Sign in with your admin credentials</p>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-7" style={{ boxShadow: 'var(--shadow-lg)' }}>
-          <button onClick={() => navigate('/')} className="mb-5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-3 w-3" /> Back to main login
-          </button>
-
-          <div className="mb-3.5">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Admin Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-              <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} placeholder="admin@example.com" className="h-10 rounded-xl pl-9 text-sm" disabled={loading} />
-            </div>
-          </div>
-
-          <div className="mb-5">
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-              <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && !loading && handleSubmit()} placeholder="••••••••" className="h-10 rounded-xl pl-9 text-sm" disabled={loading} />
-            </div>
-          </div>
-
-          {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 px-3 py-2">
-              <p className="text-xs text-destructive">{error}</p>
-            </div>
-          )}
+    <AuthLayout mark={mark} title="Admin Portal" tagline="Restricted area for JavaLabs administrators"
+      highlights={['Approve and manage member accounts', 'Manage AI keys and usage analytics', 'Coins, store and platform settings']}>
+      <AuthCard>
+        <button type="button" onClick={() => navigate('/')} className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to main sign in
+        </button>
+        <AuthHeading title="Admin sign in" subtitle="Use the credentials of an account with admin access." />
+        <form noValidate onSubmit={e => { e.preventDefault(); if (!loading) handleSubmit(); }}>
+          <AuthField label="Admin email" icon={Mail} type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} placeholder="admin@example.com" autoComplete="email" disabled={loading} />
+          <AuthField label="Password" icon={Lock} type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} placeholder="••••••••" autoComplete="current-password" disabled={loading} />
+          {error && <AuthAlert>{error}</AuthAlert>}
           {confirmationEmail && confirmationEmail === email.trim() && (
-            <EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} />
+            <div className="mb-4"><EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} /></div>
           )}
-
-          <Button onClick={handleSubmit} className="w-full h-10 rounded-xl text-sm font-medium" disabled={loading}>
-            {loading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing In...</>
-            ) : (
-              <span className="flex items-center gap-2">
-                Admin Sign In
-                <ArrowRight className="h-4 w-4" />
-              </span>
+          <Button type="submit" className="group mt-1 h-11 w-full rounded-xl text-[14px] font-semibold min-[600px]:h-10" disabled={loading}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying access…</> : (
+              <span className="flex items-center gap-2">Sign in to admin <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
             )}
           </Button>
-
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => navigate('/admin/signup')}
-              className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-            >
-              <UserPlus className="h-3 w-3" /> Request Admin Access
-            </button>
-          </div>
+        </form>
+        <div className="mt-5 border-t border-border/60 pt-4 text-center min-[600px]:mt-4 min-[600px]:pt-3">
+          <button type="button" onClick={() => navigate('/admin/signup')} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+            <UserPlus className="h-3.5 w-3.5" /> Request admin access
+          </button>
         </div>
-      </div>
-    </div>
+      </AuthCard>
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 min-[600px]:mt-3"><Lock className="h-3 w-3" /> Every admin sign-in is verified against assigned roles.</p>
+    </AuthLayout>
   );
 };
 

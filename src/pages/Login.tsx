@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Code2, Terminal, Cpu, Loader2, Mail, Lock, User, ArrowLeft, ArrowRight, Users } from 'lucide-react';
+import { Loader2, Mail, Lock, User, ArrowLeft, ArrowRight, Users, MailCheck, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AuthLayout, AuthCard, AuthHeading, AuthAlert } from '@/components/auth/AuthLayout';
+import { AuthField } from '@/components/auth/AuthField';
 import { signUp, signIn, supabase } from '@/lib/supabase';
 import { useUser } from '@/lib/user-context';
 import { useNavigate } from 'react-router-dom';
-import logoMark from '@/assets/javaarena-logo.png';
 import { EmailConfirmationNotice } from '@/components/EmailConfirmationNotice';
 import { isEmailUnconfirmed } from '@/lib/auth-errors';
 import { lovable } from '@/integrations/lovable/index';
@@ -88,176 +88,128 @@ const Login = () => {
     setLoading(false);
   };
 
+  const switchMode = (next: 'login' | 'signup' | 'forgot') => {
+    setMode(next); setError(''); setResetSent(false); setSignupSuccess(false); setConfirmationEmail('');
+  };
+  const onEnter = (e: React.KeyboardEvent) => { if (e.key === 'Enter' && !loading) handleSubmit(); };
+  const busy = loading || googleLoading;
+  const heading = mode === 'forgot'
+    ? { title: 'Reset your password', subtitle: "Enter your account email and we'll send you a reset link." }
+    : mode === 'signup'
+      ? { title: 'Create your account', subtitle: 'Start practising DSA in Java in under a minute.' }
+      : { title: 'Welcome back', subtitle: 'Sign in to continue your practice.' };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 min-[600px]:h-dvh min-[600px]:min-h-0 min-[600px]:overflow-hidden min-[600px]:py-4 min-[1024px]:px-10">
-      <div className="w-full max-w-[400px] animate-in-up min-[600px]:grid min-[600px]:max-w-[1100px] min-[600px]:grid-cols-2 min-[600px]:items-center min-[600px]:gap-8 min-[1024px]:gap-16">
-        {/* Logo */}
-        <div className="mb-10 text-center min-[600px]:mb-0">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300 min-[600px]:h-24 min-[600px]:w-24">
-            <img src={logoMark} alt="JavaLabs logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0 min-[600px]:h-14 min-[600px]:w-14" />
+    <AuthLayout>
+      <AuthCard>
+        {mode === 'forgot' && !resetSent && (
+          <button type="button" onClick={() => switchMode('login')} className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to sign in
+          </button>
+        )}
+
+        {signupSuccess ? (
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><MailCheck className="h-6 w-6 text-success" /></div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Check your inbox</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">We sent a confirmation link to <span className="font-medium text-foreground">{email.trim()}</span>. After you confirm, an admin will review and approve your access.</p>
+            <div className="mt-5 text-left"><EmailConfirmationNotice key={email.trim()} email={email.trim()} /></div>
+            <Button variant="outline" onClick={() => switchMode('login')} className="mt-4 h-10 w-full rounded-xl">Back to sign in</Button>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground">JavaLabs</h1>
-          <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">Your AI-powered DSA practice environment</p>
-        </div>
-
-        {/* Card */}
-        <div className="min-w-0">
-        <div className="surface-elevated p-8 rounded-2xl min-[600px]:p-4 min-[1024px]:p-6">
-          {/* Feature badges */}
-          <div className="mb-8 flex items-center justify-center gap-3 text-[11px] font-medium tracking-wide text-muted-foreground min-[600px]:mb-4 min-[600px]:gap-2">
-            <span className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1">
-              <Terminal className="h-3 w-3" /> Java
-            </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1">
-              <Cpu className="h-3 w-3" /> AI
-            </span>
-            <span className="flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1">
-              <Code2 className="h-3 w-3" /> Monaco
-            </span>
+        ) : resetSent ? (
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><MailCheck className="h-6 w-6 text-success" /></div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Check your email</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">If an account exists for <span className="font-medium text-foreground">{email.trim()}</span>, you'll receive a password reset link. Check your inbox and spam folder.</p>
+            <Button variant="outline" onClick={() => switchMode('login')} className="mt-5 h-10 w-full rounded-xl">Back to sign in</Button>
+            <button type="button" onClick={() => { setResetSent(false); }} className="mt-3 text-xs text-muted-foreground hover:text-foreground">Didn't get it? Try again</button>
           </div>
+        ) : (
+          <form noValidate onSubmit={e => { e.preventDefault(); if (!loading) handleSubmit(); }}>
+            {mode !== 'forgot' && (
+              <div className="mb-5 grid grid-cols-2 rounded-xl bg-secondary p-1 text-sm font-medium min-[600px]:mb-4" role="tablist">
+                {(['login', 'signup'] as const).map(m => (
+                  <button key={m} type="button" role="tab" aria-selected={mode === m} onClick={() => switchMode(m)} disabled={busy}
+                    className={`h-8 rounded-lg transition-all ${mode === m ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {m === 'login' ? 'Sign in' : 'Sign up'}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          <h2 className="mb-6 text-center text-[17px] font-semibold tracking-tight text-foreground min-[600px]:mb-4">
-            {mode === 'forgot' ? 'Reset Password' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
-          </h2>
+            <AuthHeading {...heading} />
 
-          {mode === 'forgot' && (
-            <button onClick={() => { setMode('login'); setError(''); setResetSent(false); }} className="mb-4 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-3 w-3" /> Back to sign in
-            </button>
-          )}
-
-          {signupSuccess ? (
-            <div className="rounded-xl bg-success/10 p-5 text-center">
-              <p className="text-sm font-medium text-success">Account Created!</p>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Please check your email to verify your account. After verification, an admin will review and approve your access.
-              </p>
-              <div className="mt-4"><EmailConfirmationNotice key={email.trim()} email={email.trim()} /></div>
-              <button
-                onClick={() => { setSignupSuccess(false); setMode('login'); }}
-                className="mt-3 text-xs font-medium text-foreground hover:underline"
-              >
-                Back to Sign In
-              </button>
-            </div>
-          ) : resetSent ? (
-            <div className="rounded-xl bg-success/10 p-5 text-center">
-              <p className="text-sm font-medium text-success">Reset link sent!</p>
-              <p className="mt-1.5 text-xs text-muted-foreground">If an account exists for this email, you’ll receive a password reset link. Check your inbox and spam folder.</p>
-              <Button variant="link" onClick={() => { setMode('login'); setResetSent(false); setError(''); }} className="mt-3">Back to Sign In</Button>
-            </div>
-          ) : (
-            <>
-              {mode !== 'forgot' && (
-                <>
-                  <Button variant="outline" onClick={handleGoogle} disabled={loading || googleLoading} className="google-auth-button mb-4 h-11 w-full rounded-xl min-[600px]:mb-3 min-[600px]:h-10">
-                    {googleLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : (
-                      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+            {mode !== 'forgot' && (
+              <>
+                <Button type="button" variant="outline" onClick={handleGoogle} disabled={busy} className="google-auth-button mb-4 h-11 w-full rounded-xl min-[600px]:mb-3 min-[600px]:h-10">
+                  {googleLoading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : (
+                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
                         <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z" />
                         <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z" />
                         <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.98-3.09z" />
                         <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z" />
                       </svg>
-                    )}
-                    {googleLoading ? 'Connecting…' : mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
-                  </Button>
-                  <div className="mb-5 flex items-center gap-3 text-xs text-muted-foreground min-[600px]:mb-3"><span className="h-px flex-1 bg-border" />or with email<span className="h-px flex-1 bg-border" /></div>
-                </>
-              )}
-              {mode === 'signup' && (
-                <div className="mb-4 min-[600px]:mb-3">
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <Input value={username} onChange={e => { setUsername(e.target.value); setError(''); }} placeholder="e.g. dev_coder" className="h-11 rounded-xl pl-10 font-mono text-sm bg-secondary/30 focus:bg-background border-border/60 transition-colors" disabled={loading} />
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-4 min-[600px]:mb-3">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                  <Input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} placeholder="you@example.com" className="h-11 rounded-xl pl-10 text-sm bg-secondary/30 focus:bg-background border-border/60 transition-colors" disabled={loading} />
-                </div>
-              </div>
-
-              {mode !== 'forgot' && (
-                <div className="mb-6 min-[600px]:mb-4">
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <Input type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} onKeyDown={e => e.key === 'Enter' && !loading && handleSubmit()} placeholder="••••••••" className="h-11 rounded-xl pl-10 text-sm bg-secondary/30 focus:bg-background border-border/60 transition-colors" disabled={loading} />
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div className="mb-4 rounded-lg bg-destructive/10 px-3 py-2">
-                  <p className="text-xs text-destructive">{error}</p>
-                </div>
-              )}
-              {mode === 'login' && confirmationEmail && confirmationEmail === email.trim() && (
-                <EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} />
-              )}
-
-              <Button onClick={handleSubmit} className="w-full h-11 rounded-xl text-[14px] font-semibold tracking-wide transition-all duration-200" disabled={loading || googleLoading}>
-                {loading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {mode === 'forgot' ? 'Sending...' : mode === 'signup' ? 'Creating...' : 'Signing In...'}</>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    {mode === 'forgot' ? 'Send Reset Link' : mode === 'signup' ? 'Create Account' : 'Sign In'}
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                )}
-              </Button>
-
-              {/* Guest Mode Button */}
-              {mode === 'login' && (
-                <Button
-                  onClick={enterGuestMode}
-                  variant="outline"
-                  className="w-full h-11 rounded-xl text-[14px] font-medium mt-3 gap-2 border-border/80 hover:bg-secondary/50 transition-colors"
-                  disabled={loading}
-                >
-                  <Users className="h-4 w-4" />
-                  Continue as Guest
+                  )}
+                  {googleLoading ? 'Connecting…' : mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
                 </Button>
+                <div className="mb-4 flex items-center gap-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground min-[600px]:mb-3"><span className="h-px flex-1 bg-border" />or continue with email<span className="h-px flex-1 bg-border" /></div>
+              </>
+            )}
+
+            {mode === 'signup' && (
+              <AuthField label="Username" icon={User} value={username} onChange={e => { setUsername(e.target.value); setError(''); }} placeholder="e.g. dev_coder" autoComplete="username" disabled={loading} hint="3+ characters: letters, numbers and underscores." />
+            )}
+            <AuthField label="Email" icon={Mail} type="email" value={email} onChange={e => { setEmail(e.target.value); setError(''); }} onKeyDown={mode === 'forgot' ? onEnter : undefined} placeholder="you@example.com" autoComplete="email" disabled={loading} />
+            {mode !== 'forgot' && (
+              <AuthField
+                label="Password" icon={Lock} type="password" value={password}
+                onChange={e => { setPassword(e.target.value); setError(''); }} onKeyDown={onEnter}
+                placeholder="••••••••" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} disabled={loading}
+                hint={mode === 'signup' ? 'At least 6 characters.' : undefined}
+                action={mode === 'login' ? <button type="button" onClick={() => switchMode('forgot')} className="text-xs font-medium text-muted-foreground hover:text-foreground" disabled={loading}>Forgot password?</button> : undefined}
+              />
+            )}
+
+            {error && <AuthAlert>{error}</AuthAlert>}
+            {mode === 'login' && confirmationEmail && confirmationEmail === email.trim() && (
+              <div className="mb-4"><EmailConfirmationNotice key={confirmationEmail} email={confirmationEmail} /></div>
+            )}
+
+            <Button type="submit" className="group mt-1 h-11 w-full rounded-xl text-[14px] font-semibold min-[600px]:h-10" disabled={busy}>
+              {loading ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {mode === 'forgot' ? 'Sending…' : mode === 'signup' ? 'Creating account…' : 'Signing in…'}</>
+              ) : (
+                <span className="flex items-center gap-2">
+                  {mode === 'forgot' ? 'Send reset link' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
               )}
+            </Button>
 
-              <div className="mt-5 flex flex-col items-center gap-2 min-[600px]:mt-3">
-                {mode === 'login' && (
-                  <button onClick={() => { setMode('forgot'); setError(''); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors" disabled={loading}>
-                    Forgot password?
-                  </button>
-                )}
-                <button
-                  onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError(''); setSignupSuccess(false); }}
-                  className="text-xs font-medium text-foreground hover:underline"
-                  disabled={loading}
-                >
-                  {mode === 'signup' ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-                </button>
-                {mode === 'login' && (
-                  <button
-                    onClick={() => navigate('/admin-login')}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    disabled={loading}
-                  >
-                    Admin Login →
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+            {mode === 'login' && (
+              <Button type="button" onClick={enterGuestMode} variant="ghost" className="mt-2 h-10 w-full gap-2 rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground" disabled={busy}>
+                <Users className="h-4 w-4" /> Continue as guest
+              </Button>
+            )}
 
-        <p className="mt-5 text-center text-[11px] text-muted-foreground/60 min-[600px]:mt-3">
-          Your problems and solutions are saved securely in the cloud.
-        </p>
-        </div>
-      </div>
-    </div>
+            {mode === 'signup' && (
+              <p className="mt-4 text-center text-xs text-muted-foreground">New accounts are reviewed by an admin before first sign-in.</p>
+            )}
+          </form>
+        )}
+
+        {mode === 'login' && !signupSuccess && (
+          <div className="mt-5 border-t border-border/60 pt-4 text-center min-[600px]:mt-4 min-[600px]:pt-3">
+            <button type="button" onClick={() => navigate('/admin-login')} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground" disabled={loading}>
+              <ShieldCheck className="h-3.5 w-3.5" /> Admin portal
+            </button>
+          </div>
+        )}
+      </AuthCard>
+      <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground/70 min-[600px]:mt-3">
+        <Lock className="h-3 w-3" /> Your problems and solutions are saved securely in the cloud.
+      </p>
+    </AuthLayout>
   );
 };
 

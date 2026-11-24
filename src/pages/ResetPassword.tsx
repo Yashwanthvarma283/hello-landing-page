@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import { Lock, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { AuthLayout, AuthCard, AuthHeading, AuthAlert } from '@/components/auth/AuthLayout';
+import { AuthField } from '@/components/auth/AuthField';
 import { supabase } from '@/integrations/supabase/client';
 
 const ResetPassword = () => {
@@ -63,75 +64,36 @@ const ResetPassword = () => {
     return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 aria-label="Checking reset link" className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
-  if (!isRecovery) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">Invalid or expired reset link.</p>
-          <Button onClick={() => navigate('/')} variant="outline">Go to Login</Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center animate-fade-in">
-          <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-success" />
-          <h2 className="text-lg font-bold text-foreground">Password Reset!</h2>
-          <p className="text-sm text-muted-foreground mt-1">Sign in with your new password.</p>
-          <Button onClick={() => navigate('/')} className="mt-4">Back to Sign In</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-md animate-fade-in">
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-foreground">Set New Password</h2>
-
-          <div className="mb-3">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">New Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="password"
-                value={password}
-                onChange={e => { setPassword(e.target.value); setError(''); }}
-                placeholder="••••••••"
-                className="pl-9"
-                disabled={loading}
-              />
-            </div>
+    <AuthLayout tagline="Secure your account with a new password">
+      <AuthCard>
+        {!isRecovery ? (
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10"><AlertTriangle className="h-6 w-6 text-destructive" /></div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Invalid or expired reset link.</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">Reset links can be used once and expire after a short time. Request a new one from the sign-in page.</p>
+            <Button onClick={() => navigate('/')} variant="outline" className="mt-5 h-10 w-full rounded-xl">Go to sign in</Button>
           </div>
-
-          <div className="mb-4">
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Confirm Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="password"
-                value={confirmPassword}
-                onChange={e => { setConfirmPassword(e.target.value); setError(''); }}
-                onKeyDown={e => e.key === 'Enter' && handleReset()}
-                placeholder="••••••••"
-                className="pl-9"
-                disabled={loading}
-              />
-            </div>
+        ) : success ? (
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success/10"><CheckCircle2 className="h-6 w-6 text-success" /></div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Password updated</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Sign in with your new password.</p>
+            <Button onClick={() => navigate('/')} className="mt-5 h-10 w-full rounded-xl">Back to Sign In</Button>
           </div>
-
-          {error && <p className="mb-3 text-xs text-destructive">{error}</p>}
-
-          <Button onClick={handleReset} className="w-full" disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Resetting...</> : 'Reset Password'}
-          </Button>
-        </div>
-      </div>
-    </div>
+        ) : (
+          <form noValidate onSubmit={e => { e.preventDefault(); if (!loading) handleReset(); }}>
+            <AuthHeading title="Set a new password" subtitle="Choose a strong password you haven't used before." />
+            <AuthField label="New password" icon={Lock} type="password" value={password} onChange={e => { setPassword(e.target.value); setError(''); }} placeholder="••••••••" autoComplete="new-password" disabled={loading} hint="At least 6 characters." />
+            <AuthField label="Confirm password" icon={Lock} type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); setError(''); }} placeholder="••••••••" autoComplete="new-password" disabled={loading} />
+            {error && <AuthAlert>{error}</AuthAlert>}
+            <Button type="submit" className="mt-1 h-11 w-full rounded-xl text-[14px] font-semibold min-[600px]:h-10" disabled={loading}>
+              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</> : 'Update password'}
+            </Button>
+          </form>
+        )}
+      </AuthCard>
+    </AuthLayout>
   );
 };
 

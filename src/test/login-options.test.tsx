@@ -20,7 +20,7 @@ describe('login options', () => {
   });
   it('starts Google signup through the same account provider', async () => {
     open();
-    fireEvent.click(screen.getByRole('button', { name: "Don't have an account? Sign up" }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Sign up' }));
     fireEvent.click(screen.getByRole('button', { name: 'Sign up with Google' }));
     await waitFor(() => expect(mocks.google).toHaveBeenCalledWith('google', expect.objectContaining({ redirect_uri: window.location.origin })));
   });
@@ -28,7 +28,7 @@ describe('login options', () => {
     open();
     fireEvent.click(screen.getByRole('button', { name: 'Forgot password?' }));
     fireEvent.change(screen.getByPlaceholderText('you@example.com'), { target: { value: 'learner@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Send Reset Link' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Send reset link' }));
     await waitFor(() => expect(mocks.reset).toHaveBeenCalledWith('learner@example.com', { redirectTo: `${window.location.origin}/reset-password` }));
   });
 });

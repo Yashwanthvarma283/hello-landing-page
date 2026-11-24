@@ -29,7 +29,7 @@ describe('password recovery', () => {
     open();
     const fields = await screen.findAllByPlaceholderText('••••••••');
     fields.forEach(field => fireEvent.change(field, { target: { value: 'NewStrongPassword2026' } }));
-    fireEvent.click(screen.getByRole('button', { name: 'Reset Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
     await waitFor(() => expect(mocks.updateUser).toHaveBeenCalledWith({ password: 'NewStrongPassword2026' }));
     await waitFor(() => expect(mocks.signOut).toHaveBeenCalledOnce());
   });
@@ -38,7 +38,7 @@ describe('password recovery', () => {
     const fields = await screen.findAllByPlaceholderText('••••••••');
     fireEvent.change(fields[0], { target: { value: 'NewStrongPassword2026' } });
     fireEvent.change(fields[1], { target: { value: 'DifferentPassword2026' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Reset Password' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Update password' }));
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 });
