@@ -1751,6 +1751,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_member: { Args: never; Returns: boolean }
       is_lobby_member: {
         Args: { _lobby_id: string; _user_id: string }
         Returns: boolean

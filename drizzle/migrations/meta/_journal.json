@@ -99,6 +99,13 @@
       "when": 1795333953071,
       "tag": "0013_tighten_open_read_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795489265482,
+      "tag": "0014_restrict_shared_reads_to_approved",
+      "breakpoints": true
     }
   ]
 }
