@@ -90,7 +90,7 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-[400px] animate-in-up">
+      <div className={`w-full max-w-[400px] animate-in-up ${mode !== 'forgot' ? 'min-[600px]:max-w-[520px]' : ''}`}>
         {/* Logo */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300">
