@@ -14,7 +14,7 @@ interface AuthLayoutProps {
 }
 
 const DEFAULT_HIGHLIGHTS = [
-  'Striver, NeetCode and LeetCode Top 150 sheets',
+  'Curated problem sheets from beginner to interview-ready',
   'Brute, better and optimal approaches side by side',
   'AI hints, reviews and relevant test cases',
 ];
