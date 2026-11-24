@@ -9,6 +9,8 @@ interface AuthLayoutProps {
   title?: string;
   tagline?: string;
   highlights?: string[];
+  /** True when rendered inside AppShell's bounded main area (fills it instead of the viewport). */
+  inShell?: boolean;
 }
 
 const DEFAULT_HIGHLIGHTS = [
@@ -18,8 +20,8 @@ const DEFAULT_HIGHLIGHTS = [
 ];
 
 /** Shared two-column auth shell: brand on the left, card on the right (stacked on mobile). */
-export const AuthLayout = ({ children, mark, title = 'JavaLabs', tagline = 'Your AI-powered DSA practice environment', highlights = DEFAULT_HIGHLIGHTS }: AuthLayoutProps) => (
-  <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-background px-4 py-10 min-[600px]:h-dvh min-[600px]:min-h-0 min-[600px]:overflow-hidden min-[600px]:py-4 min-[1024px]:px-10">
+export const AuthLayout = ({ children, mark, title = 'JavaLabs', tagline = 'Your AI-powered DSA practice environment', highlights = DEFAULT_HIGHLIGHTS, inShell = false }: AuthLayoutProps) => (
+  <div className={`relative flex items-center justify-center overflow-x-hidden bg-background px-4 py-10 min-[600px]:min-h-0 min-[600px]:overflow-hidden min-[600px]:py-4 min-[1024px]:px-10 ${inShell ? 'min-h-full min-[600px]:h-full' : 'min-h-screen min-[600px]:h-dvh'}`}>
     <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(hsl(var(--border))_1px,transparent_1px)] [background-size:22px_22px] opacity-50 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]" />
     <div className="relative w-full max-w-[420px] animate-in-up min-[600px]:grid min-[600px]:max-w-[1100px] min-[600px]:grid-cols-2 min-[600px]:items-center min-[600px]:gap-8 min-[1024px]:gap-16">
       <div className="mb-8 text-center min-[600px]:mb-0 min-[600px]:flex min-[600px]:flex-col min-[600px]:items-center">

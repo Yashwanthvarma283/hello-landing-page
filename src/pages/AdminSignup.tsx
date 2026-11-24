@@ -57,7 +57,7 @@ export default function AdminSignup() {
 
   const set = (k: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => setFormData(f => ({ ...f, [k]: e.target.value }));
   return (
-    <AuthLayout mark={<Shield className="h-8 w-8 text-background min-[600px]:h-11 min-[600px]:w-11" />} title="Admin Portal" tagline="Request administrator access to JavaLabs"
+    <AuthLayout inShell mark={<Shield className="h-8 w-8 text-background min-[600px]:h-11 min-[600px]:w-11" />} title="Admin Portal" tagline="Request administrator access to JavaLabs"
       highlights={['Requests are reviewed by an existing admin', 'Confirm your email before signing in', 'Access is granted only after approval']}>
       <AuthCard>
         <button type="button" onClick={() => navigate('/admin-login')} className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">

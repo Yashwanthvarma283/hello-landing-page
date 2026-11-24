@@ -245,7 +245,7 @@ const App = () => (
               />
               <Route
                 path="/reset-password"
-                element={shell(<ResetPassword />, "Reset Password")}
+                element={bareShell(<ResetPassword />, true)}
               />
               <Route path="/dashboard" element={<PerformanceDashboard />} />
               <Route
@@ -303,11 +303,11 @@ const App = () => (
               />
               <Route
                 path="/admin-login"
-                element={shell(<AdminLogin />, "Admin Login")}
+                element={bareShell(<AdminLogin />, true)}
               />
               <Route
                 path="/admin/signup"
-                element={shell(<AdminSignup />, "Admin Signup")}
+                element={bareShell(<AdminSignup />, true)}
               />
               <Route
                 path="/admin"

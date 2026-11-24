@@ -65,7 +65,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <AuthLayout tagline="Secure your account with a new password">
+    <AuthLayout inShell tagline="Secure your account with a new password">
       <AuthCard>
         {!isRecovery ? (
           <div className="text-center">

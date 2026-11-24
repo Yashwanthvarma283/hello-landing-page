@@ -57,7 +57,7 @@ const AdminLogin = () => {
 
   const mark = <Shield className="h-8 w-8 text-background min-[600px]:h-11 min-[600px]:w-11" />;
   return (
-    <AuthLayout mark={mark} title="Admin Portal" tagline="Restricted area for JavaLabs administrators"
+    <AuthLayout inShell mark={mark} title="Admin Portal" tagline="Restricted area for JavaLabs administrators"
       highlights={['Approve and manage member accounts', 'Manage AI keys and usage analytics', 'Coins, store and platform settings']}>
       <AuthCard>
         <button type="button" onClick={() => navigate('/')} className="mb-4 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
