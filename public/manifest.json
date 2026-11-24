@@ -1,7 +1,7 @@
 {
-    "name": "JavaArena",
-    "short_name": "JavaArena",
-    "description": "AI-powered online code compiler for writing, compiling, and running code instantly.",
+    "name": "JavaLabs",
+    "short_name": "JavaLabs",
+    "description": "AI-powered Java DSA practice platform with code editor, compiler, and AI analysis.",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",

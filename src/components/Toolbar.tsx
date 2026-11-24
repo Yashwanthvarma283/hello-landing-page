@@ -43,7 +43,7 @@ const Toolbar = ({
         <div className="md:hidden flex items-center shrink-0">
           {leftMobileActions}
         </div>
-        <span className="text-sm font-semibold tracking-tight text-foreground mr-1 hidden sm:inline">JavaArena</span>
+        <span className="text-sm font-semibold tracking-tight text-foreground mr-1 hidden sm:inline">JavaLabs</span>
 
 
 

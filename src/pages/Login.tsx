@@ -73,9 +73,9 @@ const Login = () => {
         {/* Logo */}
         <div className="mb-10 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-md transition-transform hover:scale-105 duration-300">
-            <img src={logoMark} alt="JavaArena logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
+            <img src={logoMark} alt="JavaLabs logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground">JavaArena</h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance text-foreground">JavaLabs</h1>
           <p className="mt-2 text-[15px] text-muted-foreground leading-relaxed">Your AI-powered DSA practice environment</p>
         </div>
 

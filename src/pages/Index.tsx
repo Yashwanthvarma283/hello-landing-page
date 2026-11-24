@@ -17,11 +17,11 @@ const Index = () => {
         <div className="relative">
           <div className="absolute inset-0 rounded-2xl bg-primary/30 blur-2xl animate-pulse" />
           <div className="relative h-16 w-16 rounded-2xl bg-foreground text-background flex items-center justify-center shadow-xl">
-            <img src={logoMark} alt="JavaArena logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
+            <img src={logoMark} alt="JavaLabs logo" width={1024} height={1024} className="h-9 w-9 invert dark:invert-0" />
           </div>
         </div>
         <div className="flex items-baseline gap-1">
-          {'JavaArena'.split('').map((c, i) => (
+          {'JavaLabs'.split('').map((c, i) => (
             <span
               key={i}
               className="text-2xl sm:text-3xl font-black tracking-tight text-foreground"

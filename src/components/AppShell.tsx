@@ -107,7 +107,7 @@ function Topbar({ title, subtitle, actions }: { title?: string; subtitle?: strin
         <div className="h-7 w-7 rounded-md bg-foreground text-background flex items-center justify-center shrink-0">
           <span className="text-[11px] font-bold">J</span>
         </div>
-        <span className="text-[13px] font-semibold tracking-tight">JavaArena</span>
+        <span className="text-[13px] font-semibold tracking-tight">JavaLabs</span>
       </button>
       {(title || subtitle) && (
         <div className="min-w-0 flex-1 ml-1 sm:ml-2">
