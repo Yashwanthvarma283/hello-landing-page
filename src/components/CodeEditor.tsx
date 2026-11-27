@@ -1,6 +1,30 @@
 import Editor, { OnMount } from '@monaco-editor/react';
 import { useTheme } from '@/lib/theme-context';
 import { useEffect, useRef } from 'react';
+import { useEditorSettings, getEditorSettings } from '@/lib/editor-settings';
+import { completionGroups } from '@/lib/java-completions';
+
+let completionsRegistered = false;
+function registerJavaCompletions(monaco: any) {
+  if (completionsRegistered) return;
+  completionsRegistered = true;
+  const K = monaco.languages.CompletionItemKind;
+  monaco.languages.registerCompletionItemProvider('java', {
+    provideCompletionItems: (model: any, position: any) => {
+      const word = model.getWordUntilPosition(position);
+      const range = { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn };
+      const g = completionGroups(getEditorSettings());
+      const Rule = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
+      return {
+        suggestions: [
+          ...g.templates.map((t) => ({ label: t.key, kind: K.Snippet, detail: t.description, documentation: t.body.replace(/\$\{\d+:([^}]+)\}/g, '$1').replace(/\$\d/g, ''), insertText: t.body, insertTextRules: Rule, range, sortText: '0' + t.key })),
+          ...g.keywords.map((k) => ({ label: k, kind: K.Keyword, insertText: k, range, sortText: '1' + k })),
+          ...g.classes.map((c) => ({ label: c, kind: K.Class, insertText: c, range, sortText: '2' + c })),
+        ],
+      };
+    },
+  });
+}
 
 interface CodeEditorProps {
   code: string;
@@ -10,6 +34,7 @@ interface CodeEditorProps {
 
 const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) => {
   const { theme } = useTheme();
+  const settings = useEditorSettings();
   const editorRef = useRef<any>(null);
 
   useEffect(() => {
@@ -22,6 +47,7 @@ const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) =
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    registerJavaCompletions(monaco);
     document.fonts.ready.then(() => {
       if (editorRef.current === editor) {
         monaco.editor.remeasureFonts();
@@ -114,34 +140,55 @@ const CodeEditor = ({ code, onChange, practiceMode = false }: CodeEditorProps) =
       onMount={handleEditorDidMount}
       theme={theme === 'dark' ? 'vs-dark' : 'vs'}
       options={{
-        fontSize: 14,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: settings.fontSize,
+        fontFamily: "'JetBrains Mono', Consolas, 'Courier New', monospace",
         fontLigatures: false,
         letterSpacing: 0,
-        lineHeight: 22,
+        lineHeight: Math.round(settings.fontSize * 1.6),
         automaticLayout: true,
-        minimap: { enabled: false },
-        lineNumbers: 'on',
-        autoClosingBrackets: practiceMode ? 'never' : 'languageDefined',
-        autoClosingQuotes: practiceMode ? 'never' : 'languageDefined',
-        autoSurround: practiceMode ? 'never' : 'languageDefined',
+        minimap: { enabled: settings.minimap, scale: 1, renderCharacters: false },
+        lineNumbers: settings.lineNumbers ? 'on' : 'off',
+        lineNumbersMinChars: 3,
+        glyphMargin: false,
+        folding: true,
+        showFoldingControls: 'mouseover',
+        autoClosingBrackets: settings.autoCloseBrackets ? 'languageDefined' : 'never',
+        autoClosingQuotes: settings.autoCloseBrackets ? 'languageDefined' : 'never',
+        autoClosingOvertype: 'always',
+        autoClosingDelete: 'always',
+        autoSurround: settings.autoCloseBrackets ? 'languageDefined' : 'never',
         autoIndent: 'full',
+        tabSize: 4,
+        insertSpaces: true,
         formatOnPaste: false,
         formatOnType: false,
         scrollBeyondLastLine: false,
-        wordWrap: 'on',
-        padding: { top: 12 },
-        renderLineHighlight: 'line',
+        wordWrap: settings.wordWrap ? 'on' : 'off',
+        padding: { top: 12, bottom: 12 },
+        renderLineHighlight: 'all',
+        renderWhitespace: 'selection',
+        guides: { indentation: true, bracketPairs: 'active', highlightActiveIndentation: true },
         bracketPairColorization: { enabled: true },
+        matchBrackets: 'always',
+        stickyScroll: { enabled: settings.stickyScroll },
         smoothScrolling: true,
-        cursorBlinking: 'blink',
-        cursorSmoothCaretAnimation: 'off',
+        cursorBlinking: 'smooth',
+        cursorStyle: 'line',
+        cursorWidth: 2,
+        cursorSmoothCaretAnimation: 'on',
+        mouseWheelZoom: true,
+        scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10, useShadows: false },
+        overviewRulerBorder: false,
         contextmenu: true,
-        quickSuggestions: true,
-        suggestOnTriggerCharacters: true,
-        acceptSuggestionOnEnter: practiceMode ? 'off' : 'on',
-        acceptSuggestionOnCommitCharacter: !practiceMode,
-        tabCompletion: 'off',
+        quickSuggestions: settings.suggestions || settings.liveTemplates ? { other: true, comments: false, strings: false } : false,
+        suggestOnTriggerCharacters: settings.suggestions,
+        wordBasedSuggestions: settings.suggestions ? 'currentDocument' : 'off',
+        snippetSuggestions: settings.liveTemplates ? 'top' : 'none',
+        suggest: { showWords: settings.suggestions, showKeywords: settings.suggestions, showSnippets: settings.liveTemplates, preview: true, insertMode: 'replace' },
+        acceptSuggestionOnEnter: practiceMode ? 'smart' : 'on',
+        acceptSuggestionOnCommitCharacter: false,
+        tabCompletion: settings.liveTemplates ? 'on' : 'off',
+        parameterHints: { enabled: settings.suggestions },
       }}
     />
   );
